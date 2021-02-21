@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "PicRemap", "PicRemap.vbproj", "{0C23E844-77C2-4A40-A43F-58AD071E328B}"
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "SPOT", "SPOT.vbproj", "{0C23E844-77C2-4A40-A43F-58AD071E328B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
