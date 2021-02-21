@@ -1,1 +1,0 @@
-spot "ksubi\big frodo.png" kmsc "ksubi\test\big frodo"
