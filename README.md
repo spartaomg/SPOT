@@ -1,6 +1,6 @@
 # SPOT
-Sparta's Picture Optimizing Tool for the Commodore C64
-------------------------------------------------------
+Sparta's Picture Optimizing Tool for the Commodore 64
+-----------------------------------------------------
 
 SPOT is a small Windows tool that converts .png, .bmp, and .kla images into C64 file formats optimized for better compression. The following output file formats can be selected: koala (.kla), bitmap (.map), screen RAM (.scr), color RAM (.col), compressed color RAM (.ccr)*, and optimized bitmap (.obm)**. Additionally, SPOT can also create .png, .bmp, and .jpg files.
 
