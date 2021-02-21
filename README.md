@@ -61,4 +61,5 @@ SPOT is meant to convert and optimize multicolor bitmaps (hi-res images get conv
 
 
 *Compressed color RAM (.ccr) format: two adjacent half bytes are combined to reduce the size of the color RAM to 500 bytes.
+
 **Optimized bitmap (.obm) format: bitmap info is stored column wise. Screen RAM and compressed color RAM stored row wise. First two bytes are address bytes ($00, $60) and the last one is the background color, as per koala format. File size: 9503 bytes. In most cases, this format compresses somewhat better than koala but it also needs a more complex display routine.
