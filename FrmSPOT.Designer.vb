@@ -27,21 +27,21 @@ Partial Class FrmSPOT
         Me.BtnOptimize = New System.Windows.Forms.Button()
         Me.BtnLoadKla = New System.Windows.Forms.Button()
         Me.Pnl = New System.Windows.Forms.Panel()
-        Me.PbxAC = New System.Windows.Forms.PictureBox()
         Me.PbxPic = New System.Windows.Forms.PictureBox()
         Me.PbxSH = New System.Windows.Forms.PictureBox()
         Me.PbxSL = New System.Windows.Forms.PictureBox()
         Me.PbxCR = New System.Windows.Forms.PictureBox()
+        Me.PbxAC = New System.Windows.Forms.PictureBox()
         Me.BtnSettings = New System.Windows.Forms.Button()
         Me.TT = New System.Windows.Forms.ToolTip(Me.components)
         Me.STB = New System.Windows.Forms.StatusStrip()
         Me.TSSL = New System.Windows.Forms.ToolStripStatusLabel()
         Me.Pnl.SuspendLayout()
-        CType(Me.PbxAC, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.PbxPic, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.PbxSH, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.PbxSL, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.PbxCR, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.PbxAC, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.STB.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -79,18 +79,6 @@ Partial Class FrmSPOT
         Me.Pnl.Size = New System.Drawing.Size(640, 400)
         Me.Pnl.TabIndex = 9
         '
-        'PbxAC
-        '
-        Me.PbxAC.BackColor = System.Drawing.Color.Black
-        Me.PbxAC.Location = New System.Drawing.Point(0, 0)
-        Me.PbxAC.Name = "PbxAC"
-        Me.PbxAC.Size = New System.Drawing.Size(640, 400)
-        Me.PbxAC.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
-        Me.PbxAC.TabIndex = 13
-        Me.PbxAC.TabStop = False
-        Me.TT.SetToolTip(Me.PbxAC, "Press Left mouse button to see original image. Press keys 1-4 to see C64 color di" &
-        "stribution.")
-        '
         'PbxPic
         '
         Me.PbxPic.BackColor = System.Drawing.Color.Black
@@ -100,8 +88,8 @@ Partial Class FrmSPOT
         Me.PbxPic.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
         Me.PbxPic.TabIndex = 12
         Me.PbxPic.TabStop = False
-        Me.TT.SetToolTip(Me.PbxPic, "Press Left mouse button to see original image. Press keys 1-4 to see C64 color di" &
-        "stribution.")
+        Me.TT.SetToolTip(Me.PbxPic, "Press left mouse button to see original image. Press keys 1-4 to see C64 color di" &
+        "stribution and 5 to see converted image")
         '
         'PbxSH
         '
@@ -132,6 +120,18 @@ Partial Class FrmSPOT
         Me.PbxCR.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
         Me.PbxCR.TabIndex = 9
         Me.PbxCR.TabStop = False
+        '
+        'PbxAC
+        '
+        Me.PbxAC.BackColor = System.Drawing.Color.Black
+        Me.PbxAC.Location = New System.Drawing.Point(0, 0)
+        Me.PbxAC.Name = "PbxAC"
+        Me.PbxAC.Size = New System.Drawing.Size(640, 400)
+        Me.PbxAC.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage
+        Me.PbxAC.TabIndex = 13
+        Me.PbxAC.TabStop = False
+        Me.TT.SetToolTip(Me.PbxAC, "Press Left mouse button to see original image. Press keys 1-4 to see C64 color di" &
+        "stribution.")
         '
         'BtnSettings
         '
@@ -174,11 +174,11 @@ Partial Class FrmSPOT
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "SPOT - Sparta's Picture Optimizing Tool for the Commodore 64"
         Me.Pnl.ResumeLayout(False)
-        CType(Me.PbxAC, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.PbxPic, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.PbxSH, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.PbxSL, System.ComponentModel.ISupportInitialize).EndInit()
         CType(Me.PbxCR, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.PbxAC, System.ComponentModel.ISupportInitialize).EndInit()
         Me.STB.ResumeLayout(False)
         Me.STB.PerformLayout()
         Me.ResumeLayout(False)
