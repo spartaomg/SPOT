@@ -524,6 +524,8 @@ Err:
 
                 Next
             Next
+        Else
+            MsgBox("The selected background color(s) could not be used!", vbOKOnly + vbInformation, "Invalid background color(s)")
         End If
 
 SkipOptimize:
