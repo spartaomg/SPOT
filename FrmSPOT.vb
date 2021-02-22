@@ -2,11 +2,10 @@
 
 Public Class FrmSPOT
     Private Sub Main_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        'On Error GoTo Err
+        On Error GoTo Err
 
         Dim Splash As New FrmSplash
         Dim FInfo, OutInfo As FileInfo
-
         CmdArg = Environment.GetCommandLineArgs()
 
         If CmdArg.Length > 1 Then
@@ -26,6 +25,12 @@ Public Class FrmSPOT
 
             If CmdArg.Length > 3 Then
                 CmdOut = LCase(CmdArg(3))
+            End If
+
+            If CmdArg.Length > 4 Then
+                CmdColors = LCase(CmdArg(4))
+            Else
+                CmdColors = "0123456789abcdef"                      'If argument is not specified, we allow any background colors
             End If
 
             If CmdOptions = "" Then
@@ -247,7 +252,7 @@ Err:
     End Sub
 
     Private Sub BtnLoadKla_Click(sender As Object, e As EventArgs) Handles BtnLoadKla.Click
-        'On Error GoTo Err
+        On Error GoTo Err
 
         Dim FInfo As FileInfo
         Dim OpenDLG As New OpenFileDialog

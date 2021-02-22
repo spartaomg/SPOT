@@ -27,7 +27,7 @@ Friend Module ModOptimize
     Public Blank0(), Blank1(), Blank2() As Byte
 
     Public ReadOnly UnusedColor As Byte = &H10  'Value not used by either the image or the C64
-    Public FPath, FName, FExt, SpotFolder, SavePath, SaveName, SaveExt, CmdIn, CmdOptions, CmdOut As String
+    Public FPath, FName, FExt, SpotFolder, SavePath, SaveName, SaveExt, CmdIn, CmdOptions, CmdOut, CmdColors As String
     Public C64Formats As Boolean = False
     Public FromKla As Boolean = False
     Public ScrollPos As Point
@@ -424,98 +424,107 @@ Err:
             Exit Function
         End If
 
+        Dim ImgOptimized As Boolean = False
+
         'Optimize bitmap with all possible background color
         For C As Integer = 0 To BGCols.Count - 1
             BGCol = BGCols(C)
-            For I As Integer = 0 To CT0.Count - 1
-                ColTab0(I) = CT0(I)
-                ColTab1(I) = CT1(I)
-                ColTab2(I) = CT2(I)
-                ColTab3(I) = CT3(I)
-                If ColTab1(I) = BGCol Then
-                    ColTab1(I) = ColTab0(I)
-                    ColTab0(I) = UnusedColor
-                ElseIf ColTab2(I) = BGCol Then
-                    ColTab2(I) = ColTab0(I)
-                    ColTab0(I) = UnusedColor
-                ElseIf ColTab3(I) = BGCol Then
-                    ColTab3(I) = ColTab0(I)
-                    ColTab0(I) = UnusedColor
-                End If
-            Next
+            Dim sCol = LCase(Right(Hex(BGCol), 1))
+            'If tool is run from command line, check if the current background color is on the list
+            If (CmdLn = False) Or (InStr(CmdColors, sCol) <> 0) Then
+                For I As Integer = 0 To CT0.Count - 1
+                    ColTab0(I) = CT0(I)
+                    ColTab1(I) = CT1(I)
+                    ColTab2(I) = CT2(I)
+                    ColTab3(I) = CT3(I)
+                    If ColTab1(I) = BGCol Then
+                        ColTab1(I) = ColTab0(I)
+                        ColTab0(I) = UnusedColor
+                    ElseIf ColTab2(I) = BGCol Then
+                        ColTab2(I) = ColTab0(I)
+                        ColTab0(I) = UnusedColor
+                    ElseIf ColTab3(I) = BGCol Then
+                        ColTab3(I) = ColTab0(I)
+                        ColTab0(I) = UnusedColor
+                    End If
+                Next
 
+                If CmdLn = False Then
+                    FrmSPOT.TSSL.Text = "Optimizing using background color 0" + BGCol.ToString
+                    FrmSPOT.Refresh()
+                End If
+
+                Optimize()
+                ImgOptimized = True
+            End If
+        Next
+
+        If ImgOptimized Then
             If CmdLn = False Then
-                FrmSPOT.TSSL.Text = "Optimizing using background color 0" + BGCol.ToString
+                FrmSPOT.TSSL.Text = "Updating color spaces..."
                 FrmSPOT.Refresh()
             End If
 
-            Optimize()
-        Next
+            Dim ColorBG As Color = Color.FromArgb(C64Palettes(BGCol), C64Palettes(BGCol + 16), C64Palettes(BGCol + 32))
 
-        If CmdLn = False Then
-            FrmSPOT.TSSL.Text = "Updating color spaces..."
-            FrmSPOT.Refresh()
+            For X As Integer = 0 To (PicW * 2) - 1
+                For Y As Integer = 0 To PicH - 1
+                    ACBitmap.SetPixel(X, Y, ColorBG)
+                Next
+            Next
+
+            For CY As Integer = 0 To CharRow - 1
+                For CX = 0 To CharCol - 1
+                    CP = (CY * CharCol) + CX
+
+                    Dim ColorSH As Color = Color.FromArgb(C64Palettes(ScrHi(CP)), C64Palettes(ScrHi(CP) + 16), C64Palettes(ScrHi(CP) + 32))
+                    Dim ColorSL As Color = Color.FromArgb(C64Palettes(ScrLo(CP)), C64Palettes(ScrLo(CP) + 16), C64Palettes(ScrLo(CP) + 32))
+                    Dim ColorCR As Color = Color.FromArgb(C64Palettes(ColRAM(CP)), C64Palettes(ColRAM(CP) + 16), C64Palettes(ColRAM(CP) + 32))
+                    Dim ColorBl As Color = Color.FromArgb(0, 255, 0)
+
+                    For X As Integer = 0 To 5
+                        For Y As Integer = 0 To 5
+                            If Blank0((CY * CharCol) + CX) = 0 Then
+                                SHBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorSH)
+                            Else
+                                SHBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
+                            End If
+                            If Blank1((CY * CharCol) + CX) = 0 Then
+                                SLBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorSL)
+                            Else
+                                SLBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
+                            End If
+                            If Blank2((CY * CharCol) + CX) = 0 Then
+                                CRBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorCR)
+                            Else
+                                CRBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
+                            End If
+                        Next
+                    Next
+
+                    For X As Integer = 1 To 3
+                        For Y As Integer = 1 To 3
+                            If Blank0((CY * CharCol) + CX) = 0 Then
+                                ACBitmap.SetPixel((CX * 8) + X, (CY * 8) + Y + 4, ColorSH)
+                            Else
+                                ACBitmap.SetPixel((CX * 8) + X, (CY * 8) + Y + 4, ColorBl)
+                            End If
+                            If Blank1((CY * CharCol) + CX) = 0 Then
+                                ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y + 4, ColorSL)
+                            Else
+                                ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y + 4, ColorBl)
+                            End If
+                            If Blank2((CY * CharCol) + CX) = 0 Then
+                                ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y, ColorCR)
+                            Else
+                                ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y, ColorBl)
+                            End If
+                        Next
+                    Next
+
+                Next
+            Next
         End If
-
-        Dim ColorBG As Color = Color.FromArgb(C64Palettes(BGCol), C64Palettes(BGCol + 16), C64Palettes(BGCol + 32))
-
-        For X As Integer = 0 To (PicW * 2) - 1
-            For Y As Integer = 0 To PicH - 1
-                ACBitmap.SetPixel(X, Y, ColorBG)
-            Next
-        Next
-
-        For CY As Integer = 0 To CharRow - 1
-            For CX = 0 To CharCol - 1
-                CP = (CY * CharCol) + CX
-
-                Dim ColorSH As Color = Color.FromArgb(C64Palettes(ScrHi(CP)), C64Palettes(ScrHi(CP) + 16), C64Palettes(ScrHi(CP) + 32))
-                Dim ColorSL As Color = Color.FromArgb(C64Palettes(ScrLo(CP)), C64Palettes(ScrLo(CP) + 16), C64Palettes(ScrLo(CP) + 32))
-                Dim ColorCR As Color = Color.FromArgb(C64Palettes(ColRAM(CP)), C64Palettes(ColRAM(CP) + 16), C64Palettes(ColRAM(CP) + 32))
-                Dim ColorBl As Color = Color.FromArgb(0, 255, 0)
-
-                For X As Integer = 0 To 5
-                    For Y As Integer = 0 To 5
-                        If Blank0((CY * CharCol) + CX) = 0 Then
-                            SHBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorSH)
-                        Else
-                            SHBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
-                        End If
-                        If Blank1((CY * CharCol) + CX) = 0 Then
-                            SLBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorSL)
-                        Else
-                            SLBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
-                        End If
-                        If Blank2((CY * CharCol) + CX) = 0 Then
-                            CRBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorCR)
-                        Else
-                            CRBitmap.SetPixel((CX * 8) + X + 1, (CY * 8) + Y + 1, ColorBl)
-                        End If
-                    Next
-                Next
-
-                For X As Integer = 1 To 3
-                    For Y As Integer = 1 To 3
-                        If Blank0((CY * CharCol) + CX) = 0 Then
-                            ACBitmap.SetPixel((CX * 8) + X, (CY * 8) + Y + 4, ColorSH)
-                        Else
-                            ACBitmap.SetPixel((CX * 8) + X, (CY * 8) + Y + 4, ColorBl)
-                        End If
-                        If Blank1((CY * CharCol) + CX) = 0 Then
-                            ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y + 4, ColorSL)
-                        Else
-                            ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y + 4, ColorBl)
-                        End If
-                        If Blank2((CY * CharCol) + CX) = 0 Then
-                            ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y, ColorCR)
-                        Else
-                            ACBitmap.SetPixel((CX * 8) + X + 4, (CY * 8) + Y, ColorBl)
-                        End If
-                    Next
-                Next
-
-            Next
-        Next
 
 SkipOptimize:
 
