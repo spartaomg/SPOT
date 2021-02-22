@@ -24,6 +24,7 @@ SPOT uses the following format in command line:
 spot infile kmsc2opbj outfile 0123456789abcdef
 
 infile: an input image file to be optimized/converted, only .png, .bmp, and .kla are accepted
+
 kmsc2opbj: output formats, select as many as you want in any order:
 	k - .kla
 	m - .map
@@ -34,7 +35,9 @@ kmsc2opbj: output formats, select as many as you want in any order:
 	p - .png
 	b - .bmp
 	j - .jpg
+
 outfile: the output folder and file name, extension is ignored
+
 0123456789abcdef: output background color(s), SPOT will only create C64 files using the selected background color(s), if omitted, outputs will be generated using all possible background colors
 
 The last three arguments can be omitted, but each one is dependent on the one on its left. I.e. if one omits the output format then the outfile and background color arguments must also be omitted. If outfile and background color arguments are omitted only, SPOT will use the SPOT\filename folder and the input file's name and will use all possible background colors. If output formats are omitted too than SPOT will use the formats selected in the Settings window. If the selected background color is not possible then no output will be generated.
