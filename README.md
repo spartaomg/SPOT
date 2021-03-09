@@ -13,7 +13,9 @@ SPOT can be used both as a tool window and from command line.
 Tool window functions:
 ----------------------
 Settings: Select output format(s). Autosave to SPOT subfolder - if enabled, SPOT creates a SPOT\filename subfolder and all selected files are output there. If Autosave is disabled then the user will be able to select an output folder and base file name during conversion. File extension in the save dialogue window is ignored and will be determined by the selected output formats.
+
 View Koala: Only allows a preview of a koala file. Good for before and after comparison. Press 1-5 to see color distribution.
+
 Convert & Save: SPOT loads, converts and optimizes a supported image format and saves it in the output folder. The background color will be added to the output file name in the case of C64 formats. Pressing the left mouse button over the image window (post conversion) allows a comparison of original and converted images. Differences should be only visible if the original image uses a non-default C64 palette.
 
 
@@ -26,6 +28,7 @@ spot infile kmsc2opbj outfile 0123456789abcdef
 infile: an input image file to be optimized/converted, only .png, .bmp, and .kla are accepted
 
 kmsc2opbj: output formats, select as many as you want in any order:
+
 	k - .kla
 	m - .map
 	s - .scr
