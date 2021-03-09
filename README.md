@@ -47,12 +47,15 @@ Examples for command line usage:
 --------------------------------
 
 spot test.png kmsc testout\testconv c
+
 converts test.png to .kla, .map, .scr, and .col formats and saves the output to the testout folder using testconv as base filename, and will only use background color 0c
 
 spot test.png kmsc
+
 converts test.png to .kla, .map, .scr, and .col formats and saves the output to the SPOT\test folder using test as base filename and all possible background colors
 
 spot test.png
+
 converts test.png to the formats previously selected in the Settings window and saves the output to the SPOT\test subfolder using test as base filename and all possible background colors
 
 
