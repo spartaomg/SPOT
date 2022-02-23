@@ -24,6 +24,7 @@ Partial Class FrmSettings
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmSettings))
         Me.Panel1 = New System.Windows.Forms.Panel()
+        Me.ChkAutoSave = New System.Windows.Forms.CheckBox()
         Me.ChkJpg = New System.Windows.Forms.CheckBox()
         Me.ChkBmp = New System.Windows.Forms.CheckBox()
         Me.ChkPng = New System.Windows.Forms.CheckBox()
@@ -35,13 +36,14 @@ Partial Class FrmSettings
         Me.ChkKla = New System.Windows.Forms.CheckBox()
         Me.LblOutputFormat = New System.Windows.Forms.Label()
         Me.BtnClose = New System.Windows.Forms.Button()
-        Me.ChkAutoSave = New System.Windows.Forms.CheckBox()
+        Me.ChkBgc = New System.Windows.Forms.CheckBox()
         Me.Panel1.SuspendLayout()
         Me.SuspendLayout()
         '
         'Panel1
         '
         Me.Panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
+        Me.Panel1.Controls.Add(Me.ChkBgc)
         Me.Panel1.Controls.Add(Me.ChkAutoSave)
         Me.Panel1.Controls.Add(Me.ChkJpg)
         Me.Panel1.Controls.Add(Me.ChkBmp)
@@ -55,13 +57,23 @@ Partial Class FrmSettings
         Me.Panel1.Controls.Add(Me.LblOutputFormat)
         Me.Panel1.Location = New System.Drawing.Point(13, 13)
         Me.Panel1.Name = "Panel1"
-        Me.Panel1.Size = New System.Drawing.Size(216, 283)
+        Me.Panel1.Size = New System.Drawing.Size(216, 301)
         Me.Panel1.TabIndex = 0
+        '
+        'ChkAutoSave
+        '
+        Me.ChkAutoSave.AutoSize = True
+        Me.ChkAutoSave.Location = New System.Drawing.Point(10, 278)
+        Me.ChkAutoSave.Name = "ChkAutoSave"
+        Me.ChkAutoSave.Size = New System.Drawing.Size(161, 17)
+        Me.ChkAutoSave.TabIndex = 10
+        Me.ChkAutoSave.Text = "Autosave to SPOT subfolder"
+        Me.ChkAutoSave.UseVisualStyleBackColor = True
         '
         'ChkJpg
         '
         Me.ChkJpg.AutoSize = True
-        Me.ChkJpg.Location = New System.Drawing.Point(10, 214)
+        Me.ChkJpg.Location = New System.Drawing.Point(10, 237)
         Me.ChkJpg.Name = "ChkJpg"
         Me.ChkJpg.Size = New System.Drawing.Size(83, 17)
         Me.ChkJpg.TabIndex = 9
@@ -71,7 +83,7 @@ Partial Class FrmSettings
         'ChkBmp
         '
         Me.ChkBmp.AutoSize = True
-        Me.ChkBmp.Location = New System.Drawing.Point(10, 191)
+        Me.ChkBmp.Location = New System.Drawing.Point(10, 214)
         Me.ChkBmp.Name = "ChkBmp"
         Me.ChkBmp.Size = New System.Drawing.Size(85, 17)
         Me.ChkBmp.TabIndex = 8
@@ -81,7 +93,7 @@ Partial Class FrmSettings
         'ChkPng
         '
         Me.ChkPng.AutoSize = True
-        Me.ChkPng.Location = New System.Drawing.Point(10, 168)
+        Me.ChkPng.Location = New System.Drawing.Point(10, 191)
         Me.ChkPng.Name = "ChkPng"
         Me.ChkPng.Size = New System.Drawing.Size(83, 17)
         Me.ChkPng.TabIndex = 7
@@ -91,7 +103,7 @@ Partial Class FrmSettings
         'ChkRmp
         '
         Me.ChkRmp.AutoSize = True
-        Me.ChkRmp.Location = New System.Drawing.Point(10, 145)
+        Me.ChkRmp.Location = New System.Drawing.Point(10, 168)
         Me.ChkRmp.Name = "ChkRmp"
         Me.ChkRmp.Size = New System.Drawing.Size(142, 17)
         Me.ChkRmp.TabIndex = 6
@@ -101,7 +113,7 @@ Partial Class FrmSettings
         'ChkC2
         '
         Me.ChkC2.AutoSize = True
-        Me.ChkC2.Location = New System.Drawing.Point(10, 122)
+        Me.ChkC2.Location = New System.Drawing.Point(10, 145)
         Me.ChkC2.Name = "ChkC2"
         Me.ChkC2.Size = New System.Drawing.Size(168, 17)
         Me.ChkC2.TabIndex = 5
@@ -160,28 +172,28 @@ Partial Class FrmSettings
         '
         'BtnClose
         '
-        Me.BtnClose.Location = New System.Drawing.Point(154, 302)
+        Me.BtnClose.Location = New System.Drawing.Point(154, 325)
         Me.BtnClose.Name = "BtnClose"
         Me.BtnClose.Size = New System.Drawing.Size(75, 25)
         Me.BtnClose.TabIndex = 5
         Me.BtnClose.Text = "Close"
         Me.BtnClose.UseVisualStyleBackColor = True
         '
-        'ChkAutoSave
+        'ChkBgc
         '
-        Me.ChkAutoSave.AutoSize = True
-        Me.ChkAutoSave.Location = New System.Drawing.Point(10, 256)
-        Me.ChkAutoSave.Name = "ChkAutoSave"
-        Me.ChkAutoSave.Size = New System.Drawing.Size(161, 17)
-        Me.ChkAutoSave.TabIndex = 10
-        Me.ChkAutoSave.Text = "Autosave to SPOT subfolder"
-        Me.ChkAutoSave.UseVisualStyleBackColor = True
+        Me.ChkBgc.AutoSize = True
+        Me.ChkBgc.Location = New System.Drawing.Point(10, 122)
+        Me.ChkBgc.Name = "ChkBgc"
+        Me.ChkBgc.Size = New System.Drawing.Size(144, 17)
+        Me.ChkBgc.TabIndex = 11
+        Me.ChkBgc.Text = "Background color (*.bgc)"
+        Me.ChkBgc.UseVisualStyleBackColor = True
         '
         'FrmSettings
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(240, 335)
+        Me.ClientSize = New System.Drawing.Size(240, 359)
         Me.Controls.Add(Me.BtnClose)
         Me.Controls.Add(Me.Panel1)
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle
@@ -211,4 +223,5 @@ Partial Class FrmSettings
     Friend WithEvents ChkBmp As CheckBox
     Friend WithEvents BtnClose As Button
     Friend WithEvents ChkAutoSave As CheckBox
+    Friend WithEvents ChkBgc As CheckBox
 End Class

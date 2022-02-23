@@ -1,6 +1,12 @@
 ﻿Imports System.IO
 
 Friend Module ModOptimize
+    Structure Sequence
+        Public Length As Integer
+        Public Offset As Integer
+        Public Color As Integer
+    End Structure
+
     Public CmdArg As String()
     Public CmdLn As Boolean = False
 
@@ -31,6 +37,8 @@ Friend Module ModOptimize
     Public C64Formats As Boolean = False
     Public FromKla As Boolean = False
     Public ScrollPos As Point
+
+    Private FirstBGC As Boolean = True
 
     Public Function OptimizeKla() As Boolean
         On Error GoTo Err
@@ -136,10 +144,12 @@ Err:
         CharCol = Int(PicW / 4)
         CharRow = Int(PicH / 8)
 
-        If My.Settings.OutputKla = True Then
-            If (CharCol < 40) Or (CharRow < 25) Then
-                MsgBox("This image cannot be saved as Koala or Optimized Bitmap as it is smaller than 320x200 pixels!" + vbNewLine + vbNewLine +
+        If CmdLn = False Then
+            If My.Settings.OutputKla = True Then
+                If (CharCol < 40) Or (CharRow < 25) Then
+                    MsgBox("This image cannot be saved as Koala or Optimized Bitmap as it is smaller than 320x200 pixels!" + vbNewLine + vbNewLine +
                        "All other selected output formats will be created.", vbOKOnly + vbInformation, "Image is too small for KLA and OBM formats")
+                End If
             End If
         End If
 
@@ -426,6 +436,8 @@ Err:
 
         Dim ImgOptimized As Boolean = False
 
+        FirstBGC = True
+
         'Optimize bitmap with all possible background color
         For C As Integer = 0 To BGCols.Count - 1
             BGCol = BGCols(C)
@@ -454,8 +466,10 @@ Err:
                     FrmSPOT.Refresh()
                 End If
 
-                Optimize()
+                'OptimizeByColorSequence()
+                OptimizeByColor()
                 ImgOptimized = True
+                FirstBGC = False
             End If
         Next
 
@@ -546,7 +560,544 @@ Err:
 
     End Function
 
-    Private Sub Optimize()
+    Private Sub OptimizeByColorSequence()
+        On Error GoTo Err
+
+        Dim C64Col(17) As Integer
+        ReDim ColRAM(ColTab1.Count - 1), ScrHi(ColTab1.Count - 1), ScrLo(ColTab1.Count - 1), ScrRAM(ColTab0.Count - 1)
+        Dim ColMap(ColTab0.Count - 1, 16) As Byte, ColTmp(ColTab1.Count - 1) As Byte
+        ReDim Blank0(ColTab1.Count - 1), Blank1(ColTab1.Count - 1), Blank2(ColTab1.Count - 1)
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Creating color sequences..."
+            FrmSPOT.Refresh()
+        End If
+
+        For I As Integer = 0 To ColTab0.Count - 1
+
+            ColRAM(I) = 255                     'Reset color spaces
+            ScrHi(I) = 255
+            ScrLo(I) = 255
+
+            C64Col(ColTab1(I)) += 1             'Calculate frequency of colors
+            C64Col(ColTab2(I)) += 1
+            C64Col(ColTab3(I)) += 1
+            ColMap(I, ColTab1(I)) = 255         'Create a separate color map for each color
+            ColMap(I, ColTab2(I)) = 255
+            ColMap(I, ColTab3(I)) = 255
+        Next
+
+        For I As Integer = 0 To 15              'Initialize most used color ranklist
+            MUC(I) = I
+        Next
+
+        Dim ColSeq(0) As Sequence
+        For C As Integer = 0 To 15
+            For O As Integer = 0 To ColTab0.Count - 1
+                If ColMap(O, C) = 255 Then
+                    For L = 1 To ColTab0.Count - 1 - O
+                        If ColMap(O + L, C) <> 255 Then
+                            With ColSeq(ColSeq.Count - 1)
+                                .Offset = O
+                                .Length = L
+                                .Color = C
+                            End With
+                            ReDim Preserve ColSeq(ColSeq.Count)
+                            O += L
+                            Exit For
+                        End If
+                    Next
+                End If
+            Next
+        Next
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Sorting color sequences by length..."
+            FrmSPOT.Refresh()
+        End If
+
+        Dim Chg As Boolean
+        Dim TmpSeq As Sequence
+
+Resort:
+        Chg = False
+        For I As Integer = 0 To ColSeq.Length - 2
+            If ColSeq(I).Length < ColSeq(I + 1).Length Then
+                TmpSeq = ColSeq(I)
+                ColSeq(I) = ColSeq(I + 1)
+                ColSeq(I + 1) = TmpSeq
+                Chg = True
+            End If
+        Next
+
+        If Chg = True Then GoTo Resort
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Remapping colors..."
+            FrmSPOT.Refresh()
+        End If
+
+        Dim OverlapSH, OverlapSL, OverlapCR As Integer
+
+        For I As Integer = 0 To ColSeq.Length - 1
+            OverlapSH = 0    'Overlap with ScrHi
+            OverlapSL = 0    'Overlap with ScrLo
+            OverlapCR = 0    'Overlap with ColRAM
+
+            For O As Integer = ColSeq(I).Offset To ColSeq(I).Offset + ColSeq(I).Length - 1
+                If (ScrHi(O) <> 255) Then
+                    OverlapSH += 1
+                ElseIf (ScrLo(O) <> 255) Then
+                    OverlapSL += 1
+                ElseIf (ColRAM(O) <> 255) Then
+                    OverlapCR += 1
+                End If
+            Next
+
+            For O As Integer = ColSeq(I).Offset To ColSeq(I).Offset + ColSeq(I).Length - 1
+                If (OverlapSH <= OverlapSL) And (OverlapSH <= OverlapCR) Then           'OverlapSH is smallest
+                    If OverlapSL <= OverlapCR Then                                      'OverlapSL is second smallest
+                        If ScrHi(O) = 255 Then
+                            ScrHi(O) = ColSeq(I).Color
+                        ElseIf ScrLo(O) = 255 Then
+                            ScrLo(O) = ColSeq(I).Color
+                        Else
+                            ColRAM(O) = ColSeq(I).Color
+                        End If
+                    Else                                                                'OverlapCR Is second smallest
+                        If ScrHi(O) = 255 Then
+                            ScrHi(O) = ColSeq(I).Color
+                        ElseIf ColRAM(O) = 255 Then
+                            ColRAM(O) = ColSeq(I).Color
+                        Else
+                            ScrLo(O) = ColSeq(I).Color
+                        End If
+                    End If
+                ElseIf (OverlapSL <= OverlapSH) And (OverlapSL <= OverlapCR) Then       'OverlapSL is smallest
+                    If OverlapSH <= OverlapCR Then                                      'OverlapSH is second smallest
+                        If ScrLo(O) = 255 Then
+                            ScrLo(O) = ColSeq(I).Color
+                        ElseIf ScrHi(O) = 255 Then
+                            ScrHi(O) = ColSeq(I).Color
+                        Else
+                            ColRAM(O) = ColSeq(I).Color
+                        End If
+                    Else                                                                'OverlapCR is second smallest
+                        If ScrLo(O) = 255 Then
+                            ScrLo(O) = ColSeq(I).Color
+                        ElseIf ColRAM(O) = 255 Then
+                            ColRAM(O) = ColSeq(I).Color
+                        Else
+                            ScrHi(O) = ColSeq(I).Color
+                        End If
+                    End If
+                Else                                                                    'OverlapCR is smallest
+                    If OverlapSH <= OverlapSL Then                                      'OverlapSH is second smallest
+                        If ColRAM(O) = 255 Then
+                            ColRAM(O) = ColSeq(I).Color
+                        ElseIf ScrHi(O) = 255 Then
+                            ScrHi(O) = ColSeq(I).Color
+                        Else
+                            ScrLo(O) = ColSeq(I).Color
+                        End If
+                    Else                                                                'OverlapSL is second smallest
+                        If ColRAM(O) = 255 Then
+                            ColRAM(O) = ColSeq(I).Color
+                        ElseIf ScrLo(O) = 255 Then
+                            ScrLo(O) = ColSeq(I).Color
+                        Else
+                            ScrHi(O) = ColSeq(I).Color
+                        End If
+                    End If
+                End If
+            Next
+        Next
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Swapping colors where possible..."
+            FrmSPOT.Refresh()
+        End If
+
+        For I As Integer = 1 To ColRAM.Count - 2
+            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) And (ScrHi(I - 1) <> 255) And (ScrHi(I + 1) <> 255) Then
+                If ScrLo(I) = 255 Then
+                    ScrLo(I) = ScrHi(I)
+                    ScrHi(I) = 255
+                ElseIf ColRAM(I) = 255 Then
+                    ColRAM(I) = ScrHi(I)
+                    ScrHi(I) = 255
+                End If
+            End If
+            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) And (ScrLo(I - 1) <> 255) And (ScrLo(I + 1) <> 255) Then
+                If ColRAM(I) = 255 Then
+                    ColRAM(I) = ScrLo(I)
+                    ScrLo(I) = 255
+                ElseIf ScrHi(I) = 255 Then
+                    ScrHi(I) = ScrLo(I)
+                    ScrLo(I) = 255
+                End If
+            End If
+            If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) And (ColRAM(I - 1) <> 255) And (ColRAM(I + 1) <> 255) Then
+                If ScrHi(I) = 255 Then
+                    ScrHi(I) = ColRAM(I)
+                    ColRAM(I) = 255
+                ElseIf ScrLo(I) = 255 Then
+                    ScrLo(I) = ColRAM(I)
+                    ColRAM(I) = 255
+                End If
+            End If
+        Next
+
+        '----------------------------------------------------------------------------
+        'Find loner bytes that can be swapped
+        For I As Integer = 1 To ColRAM.Count - 2
+            'If I = 219 Then MsgBox(I.ToString)
+            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) Then
+                If ScrHi(I) = ScrLo(I + 1) Then
+                    If (ScrLo(I) <> ScrLo(I - 1)) Then
+                        ScrHi(I) = ScrLo(I)
+                        ScrLo(I) = ScrLo(I + 1)
+                    End If
+                ElseIf ScrHi(I) = ScrLo(I - 1) Then
+                    If (ScrLo(I) <> ScrLo(I + 1)) Then
+                        ScrHi(I) = ScrLo(I)
+                        ScrLo(I) = ScrLo(I - 1)
+                    End If
+                ElseIf ScrHi(I) = ColRAM(I + 1) Then
+                    If (ColRAM(I) <> ColRAM(I - 1)) Then
+                        ScrHi(I) = ColRAM(I)
+                        ColRAM(I) = ColRAM(I + 1)
+                    End If
+                ElseIf ScrHi(I) = ColRAM(I - 1) Then
+                    If (ColRAM(I) <> ColRAM(I + 1)) Then
+                        ScrHi(I) = ColRAM(I)
+                        ColRAM(I) = ColRAM(I - 1)
+                    End If
+                End If
+            End If
+            'Next
+
+            'For I As Integer = 1 To ColRAM.Count - 2
+            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) Then
+                If ScrLo(I) = ScrHi(I + 1) Then
+                    If (ScrHi(I) <> ScrHi(I - 1)) Then
+                        ScrLo(I) = ScrHi(I)
+                        ScrHi(I) = ScrHi(I + 1)
+                    End If
+                ElseIf ScrLo(I) = ScrHi(I - 1) Then
+                    If (ScrHi(I) <> ScrHi(I + 1)) Then
+                        ScrLo(I) = ScrHi(I)
+                        ScrHi(I) = ScrHi(I - 1)
+                    End If
+                ElseIf ScrLo(I) = ColRAM(I + 1) Then
+                    If (ColRAM(I) <> ColRAM(I - 1)) Then
+                        ScrLo(I) = ColRAM(I)
+                        ColRAM(I) = ColRAM(I + 1)
+                    End If
+                ElseIf ScrLo(I) = ColRAM(I - 1) Then
+                    If (ColRAM(I) <> ColRAM(I + 1)) Then
+                        ScrLo(I) = ColRAM(I)
+                        ColRAM(I) = ColRAM(I - 1)
+                    End If
+                End If
+            End If
+            'Next
+
+            'For I As Integer = 1 To ColRAM.Count - 2
+            If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) Then
+                If ColRAM(I) = ScrLo(I + 1) Then
+                    If (ScrLo(I) <> ScrLo(I - 1)) Then
+                        ColRAM(I) = ScrLo(I)
+                        ScrLo(I) = ScrLo(I + 1)
+                    End If
+                ElseIf ColRAM(I) = ScrLo(I - 1) Then
+                    If (ScrLo(I) <> ScrLo(I + 1)) Then
+                        ColRAM(I) = ScrLo(I)
+                        ScrLo(I) = ScrLo(I - 1)
+                    End If
+                ElseIf ColRAM(I) = ScrHi(I + 1) Then
+                    If (ScrHi(I) <> ScrHi(I - 1)) Then
+                        ColRAM(I) = ScrHi(I)
+                        ScrHi(I) = ScrHi(I + 1)
+                    End If
+                ElseIf ColRAM(I) = ScrHi(I - 1) Then
+                    If (ScrHi(I) <> ScrHi(I + 1)) Then
+                        ColRAM(I) = ScrHi(I)
+                        ScrHi(I) = ScrHi(I - 1)
+                    End If
+                End If
+            End If
+        Next
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Filling unused space..."
+            FrmSPOT.Refresh()
+        End If
+
+        If ColRAM(0) = 255 Then
+            For I As Integer = 1 To ColRAM.Count - 1
+                If ColRAM(I) <> 255 Then
+                    ColRAM(0) = ColRAM(I)
+                    Exit For
+                End If
+            Next
+            If ColRAM(0) = 255 Then ColRAM(0) = 0 'In case the whole array remained unused
+        End If
+
+        If ScrHi(0) = 255 Then
+            For I As Integer = 1 To ScrHi.Count - 1
+                If ScrHi(I) <> 255 Then
+                    ScrHi(0) = ScrHi(I)
+                    Exit For
+                End If
+            Next
+            If ScrHi(0) = 255 Then ScrHi(0) = 0 'In case the whole array remained unused
+        End If
+
+        If ScrLo(0) = 255 Then
+            For I As Integer = 1 To ScrLo.Count - 1
+                If ScrLo(I) <> 255 Then
+                    ScrLo(0) = ScrLo(I)
+                    Exit For
+                End If
+            Next
+            If ScrLo(0) = 255 Then ScrLo(0) = 0 'In case the whole array remained unused
+        End If
+
+        For I As Integer = 1 To ColRAM.Count - 1
+            If ScrHi(I) = 255 Then
+                'Blank0(I) = 255
+                ScrHi(I) = ScrHi(I - 1)
+            End If
+
+            If (ScrLo(I) = ScrHi(I)) Or (ScrLo(I) = 255) Then
+                'Blank1(I) = 255
+                ScrLo(I) = ScrLo(I - 1)
+            End If
+
+            If (ColRAM(I) = ScrHi(I)) Or (ColRAM(I) = ScrLo(I)) Or (ColRAM(I) = 255) Then
+                'Blank2(I) = 255
+                ColRAM(I) = ColRAM(I - 1)
+            End If
+        Next
+        'RetroArrangeBitmap()
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Preparing screen RAM..."
+            FrmSPOT.Refresh()
+        End If
+
+        'Combine screen RAM hi and low nibbles
+        For I As Integer = 0 To ScrRAM.Count - 1
+            Dim Tmp As Byte = ColRAM(I)
+            ColRAM(I) = ScrLo(I)                    'Swab ColRAM with ScrLo - this results in improved compressibility
+            ScrLo(I) = Tmp
+            ScrRAM(I) = ((ScrHi(I) Mod 16) * 16) + (ScrLo(I) Mod 16)
+        Next
+
+        IO.File.WriteAllBytes(SpotFolder + "\ColRAM_CS.bin", ColRAM)
+        IO.File.WriteAllBytes(SpotFolder + "\ScrHi_CS.bin", ScrHi)
+        IO.File.WriteAllBytes(SpotFolder + "\ScrLo_CS.bin", ScrLo)
+        IO.File.WriteAllBytes(SpotFolder + "\ScrRAM_CS.bin", ScrRAM)
+
+        '----------------------------------------------------------------------------
+        'Rebuild the image
+        '----------------------------------------------------------------------------
+
+        If CmdLn = False Then
+            FrmSPOT.TSSL.Text = "Rebuilding the bitmap..."
+            FrmSPOT.Refresh()
+        End If
+
+        Dim Col1, Col2, Col3 As Byte
+        Dim CP As Integer   'Char Position within array
+        Dim V As Byte       'One byte to work with...
+
+        'Replace C64 colors with respective bit pairs
+        For CY As Integer = 0 To CharRow - 1
+            For CX As Integer = 0 To CharCol - 1
+                Col1 = ScrHi((CY * CharCol) + CX)        'Fetch colors from tabs
+                Col2 = ScrLo((CY * CharCol) + CX)
+                Col3 = ColRAM((CY * CharCol) + CX)
+                For BY As Integer = 0 To 7
+                    For BX As Integer = 0 To 3
+                        'Calculate pixel position in array
+                        CP = (CY * PicW * 8) + (CX * 4) + (BY * PicW) + BX
+                        If Pic(CP) = BGCol Then
+                            PicMsk(CP) = 0
+                        ElseIf Pic(CP) = Col1 Then
+                            PicMsk(CP) = 1
+                        ElseIf Pic(CP) = Col2 Then
+                            PicMsk(CP) = 2
+                        ElseIf Pic(CP) = Col3 Then
+                            PicMsk(CP) = 3
+                        End If
+                    Next
+                Next
+            Next
+        Next
+
+        'Finally, convert bit pairs to final bitmap
+        For CY As Integer = 0 To CharRow - 1
+            For CX As Integer = 0 To CharCol - 1
+                For BY As Integer = 0 To 7
+                    CP = (CY * PicW * 8) + (CX * 4) + (BY * PicW)
+                    V = (PicMsk(CP) * 64) + (PicMsk(CP + 1) * 16) + (PicMsk(CP + 2) * 4) + PicMsk(CP + 3)
+                    CP = (CY * CharCol * 8) + (CX * 8) + BY
+                    BMP(CP) = V
+                Next
+            Next
+        Next
+
+        If Not Directory.Exists(SavePath) Then
+            Directory.CreateDirectory(SavePath)
+        End If
+
+        If ((CmdLn = False) And (My.Settings.OutputKla = True)) Or (InStr(CmdOptions, "k") <> 0) Then
+            'Save Koala only if bitmap is at least 320x200 pixels
+            If (CharRow >= 25) And (CharCol >= 40) Then
+
+                Dim Koala(10002) As Byte
+                Koala(1) = &H60
+                Koala(10002) = BGCol
+
+                Dim StartCX, StartCY, StartBY As Integer
+
+                StartCX = Int(CharCol / 2) - 20
+                StartCY = Int(CharRow / 2) - 12
+                StartBY = (CharCol * 4) - 160
+
+                For CY As Integer = 0 To 24
+                    For BY As Integer = 0 To 319
+                        Koala((CY * 320) + BY + 2) = BMP(((StartCY + CY) * CharCol * 8) + StartBY + BY)
+                    Next
+                Next
+
+                For CY As Integer = 0 To 24
+                    For CX As Integer = 0 To 39
+                        Koala(8002 + (CY * 40) + CX) = ScrRAM(((StartCY + CY) * CharCol) + StartCX + CX)
+                        Koala(9002 + (CY * 40) + CX) = ColRAM(((StartCY + CY) * CharCol) + StartCX + CX)
+                    Next
+                Next
+
+                If CmdLn = False Then
+                    FrmSPOT.TSSL.Text = "Saving Koala..."
+                    FrmSPOT.Refresh()
+                End If
+
+                'Save Koala
+                File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.kla", Koala)
+            End If
+        End If
+
+        'Save bitmap, color RAM, and screen RAM
+
+        If ((CmdLn = False) And (My.Settings.OutputMap = True)) Or (InStr(CmdOptions, "m") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving MAP file..."
+                FrmSPOT.Refresh()
+            End If
+            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.map", BMP)
+        End If
+
+        If ((CmdLn = False) And (My.Settings.OutputCol = True)) Or (InStr(CmdOptions, "c") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving COL file..."
+                FrmSPOT.Refresh()
+            End If
+            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.col", ColRAM)
+        End If
+
+        If ((CmdLn = False) And (My.Settings.OutputScr = True)) Or (InStr(CmdOptions, "s") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving SCR file..."
+                FrmSPOT.Refresh()
+            End If
+
+            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.scr", ScrRAM)
+        End If
+
+        If ((CmdLn = False) And (My.Settings.OutputBgc = True)) Or (InStr(CmdOptions, "g") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving BGC file..."
+                FrmSPOT.Refresh()
+            End If
+            Dim BGC(0) As Byte
+            BGC(0) = BGCol
+            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.bgc", BGC)
+        End If
+
+        Dim CCR((ColRAM.Count / 2) - 1) As Byte
+
+        For I As Integer = 0 To (ColRAM.Count / 2) - 1
+            CCR(I) = ((ColRAM(I * 2) Mod 16) * 16) + (ColRAM((I * 2) + 1) Mod 16)
+        Next
+
+        'Save compressed ColorRAM with halfbytes combined
+        If ((CmdLn = False) And (My.Settings.OutputCcr = True)) Or (InStr(CmdOptions, "2") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving CCR file..."
+                FrmSPOT.Refresh()
+            End If
+            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.ccr", CCR)
+        End If
+
+        'Save Optimized Bitmap file format only if bitmap is at least 320x200 pixels
+        'Bitmap is stored column wise, color spaces are stored row wise, color RAM is compressed
+        If ((CmdLn = False) And (My.Settings.OutputObm = True)) Or (InStr(CmdOptions, "o") <> 0) Then
+            If (CharRow >= 25) And (CharCol >= 40) Then
+                If CmdLn = False Then
+                    FrmSPOT.TSSL.Text = "Saving OBM file..."
+                    FrmSPOT.Refresh()
+                End If
+                Dim OBM(9502) As Byte
+                OBM(1) = &H60
+                OBM(9502) = BGCol
+
+                Dim StartCX, StartCY, StartBY As Integer
+
+                StartCX = Int(CharCol / 2) - 20
+                StartCY = Int(CharRow / 2) - 12
+                StartBY = (CharCol * 4) - 160
+
+                'Bitmap stored column wise
+                For CX As Integer = 0 To 39
+                    For CY As Integer = 0 To 24
+                        For BY As Integer = 0 To 7
+                            OBM((CX * 200) + (CY * 8) + BY + 2) = BMP(((StartCY + CY) * CharCol * 8) + ((StartCX + CX) * 8) + BY)
+                        Next
+                    Next
+                Next
+
+                'Screen RAM stored row wise
+                For CY As Integer = 0 To 24
+                    For CX As Integer = 0 To 39
+                        OBM(8002 + (CY * 40) + CX) = ScrRAM(((StartCY + CY) * CharCol) + StartCX + CX)
+                    Next
+                Next
+
+                StartCX = Int(StartCX / 2)
+
+                'Compressed Color RAM stored row wise
+                For CY As Integer = 0 To 24
+                    For CX As Integer = 0 To 19
+                        OBM(9002 + (CY * 20) + CX) = CCR(((StartCY + CY) * Int(CharCol / 2)) + StartCX + CX)
+                    Next
+                Next
+
+                'Save optimized bitmap file format
+                File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + "_CS.obm", OBM)
+            End If
+        End If
+
+        Exit Sub
+
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptimizeByColor()
         On Error GoTo Err
 
         Dim C64Col(17) As Integer
@@ -686,9 +1237,11 @@ Resort:
                             End If
                         End If
                     End If
+                    'If (ColRAM(I) <> 255) And (ColRAM(I) <> MUC(J)) Then OverlapCR -= 1
+                    'If (ScrHi(I) <> 255) And (ScrHi(I) <> MUC(J)) Then OverlapSH -= 1
+                    'If (ScrLo(I) <> 255) And (ScrHi(I) <> MUC(J)) Then OverlapSL -= 1
                 End If
             Next
-            'MsgBox(MUC(J).ToString + vbNewLine + vbNewLine + OverlapSH.ToString + vbNewLine + OverlapSL.ToString + vbNewLine + OverlapCR.ToString)
         Next
 
         'File.WriteAllBytes(SpotFolder + "\ColRAM_FF.bin", ScrLo)       'ColRAM and ScrLO will be swapped later!!!
@@ -735,7 +1288,6 @@ Resort:
         '----------------------------------------------------------------------------
         'Find loner bytes that can be swapped
         For I As Integer = 1 To ColRAM.Count - 2
-            'If I = 219 Then MsgBox(I.ToString)
             If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) Then
                 If ScrHi(I) = ScrLo(I + 1) Then
                     If (ScrLo(I) <> ScrLo(I - 1)) Then
@@ -759,9 +1311,7 @@ Resort:
                     End If
                 End If
             End If
-            'Next
 
-            'For I As Integer = 1 To ColRAM.Count - 2
             If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) Then
                 If ScrLo(I) = ScrHi(I + 1) Then
                     If (ScrHi(I) <> ScrHi(I - 1)) Then
@@ -785,9 +1335,7 @@ Resort:
                     End If
                 End If
             End If
-            'Next
 
-            'For I As Integer = 1 To ColRAM.Count - 2
             If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) Then
                 If ColRAM(I) = ScrLo(I + 1) Then
                     If (ScrLo(I) <> ScrLo(I - 1)) Then
@@ -926,7 +1474,7 @@ Resort:
             If ColRAM(0) = 255 Then ColRAM(0) = 0 'In case the whole array remained unused
         End If
 
-            If ScrHi(0) = 255 Then
+        If ScrHi(0) = 255 Then
             For I As Integer = 1 To ScrHi.Count - 1
                 If ScrHi(I) <> 255 Then
                     ScrHi(0) = ScrHi(I)
@@ -962,6 +1510,46 @@ Resort:
                 ColRAM(I) = ColRAM(I - 1)
             End If
         Next
+
+        'For I As Integer = 1 To ColRAM.Count - 1
+
+        'If ScrHi(I - 1) = ScrLo(I) Then
+        'Dim Tmp As Byte = ScrHi(I)
+        'ScrHi(I) = ScrLo(I)
+        'ScrLo(I) = Tmp
+        'End If
+
+        'If ScrHi(I - 1) = ColRAM(I) Then
+        'Dim Tmp As Byte = ScrHi(I)
+        'ScrHi(I) = ColRAM(I)
+        'ColRAM(I) = Tmp
+        'End If
+
+        'If ScrLo(I - 1) = ScrHi(I) Then
+        'Dim Tmp As Byte = ScrLo(I)
+        'ScrLo(I) = ScrHi(I)
+        'ScrHi(I) = Tmp
+        'End If
+
+        'If ScrLo(I - 1) = ColRAM(I) Then
+        'Dim Tmp As Byte = ScrLo(I)
+        'ScrLo(I) = ColRAM(I)
+        'ColRAM(I) = Tmp
+        'End If
+
+        'If ColRAM(I - 1) = ScrHi(I) Then
+        'Dim Tmp As Byte = ColRAM(I)
+        'ColRAM(I) = ScrHi(I)
+        'ScrHi(I) = Tmp
+        'End If
+
+        'If ColRAM(I - 1) = ScrLo(I) Then
+        'Dim Tmp As Byte = ColRAM(I)
+        'ColRAM(I) = ScrLo(I)
+        'ScrLo(I) = Tmp
+        'End If
+
+        'Next
 
         'For I As Integer = 1 To ColRAM.Count - 2
         'If ((ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1))) Or
@@ -1130,7 +1718,7 @@ Resort:
                 FrmSPOT.TSSL.Text = "Saving MAP file..."
                 FrmSPOT.Refresh()
             End If
-            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".map", BMP)
+            File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".map", BMP)
         End If
 
         If ((CmdLn = False) And (My.Settings.OutputCol = True)) Or (InStr(CmdOptions, "c") <> 0) Then
@@ -1138,7 +1726,7 @@ Resort:
                 FrmSPOT.TSSL.Text = "Saving COL file..."
                 FrmSPOT.Refresh()
             End If
-            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".col", ColRAM)
+            File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".col", ColRAM)
         End If
 
         If ((CmdLn = False) And (My.Settings.OutputScr = True)) Or (InStr(CmdOptions, "s") <> 0) Then
@@ -1147,7 +1735,17 @@ Resort:
                 FrmSPOT.Refresh()
             End If
 
-            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".scr", ScrRAM)
+            File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".scr", ScrRAM)
+        End If
+
+        If ((CmdLn = False) And (My.Settings.OutputBgc = True)) Or (InStr(CmdOptions, "g") <> 0) Then
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "Saving BGC file..."
+                FrmSPOT.Refresh()
+            End If
+            Dim BGC(0) As Byte
+            BGC(0) = BGCol
+            File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".bgc", BGC)
         End If
 
         Dim CCR((ColRAM.Count / 2) - 1) As Byte
@@ -1162,7 +1760,7 @@ Resort:
                 FrmSPOT.TSSL.Text = "Saving CCR file..."
                 FrmSPOT.Refresh()
             End If
-            File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".ccr", CCR)
+            File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".ccr", CCR)
         End If
 
         'Save Optimized Bitmap file format only if bitmap is at least 320x200 pixels
@@ -1209,7 +1807,7 @@ Resort:
                 Next
 
                 'Save optimized bitmap file format
-                File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".obm", OBM)
+                File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".obm", OBM)
             End If
         End If
 

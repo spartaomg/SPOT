@@ -47,17 +47,17 @@ Partial Class FrmSPOT
         '
         'BtnOptimize
         '
-        Me.BtnOptimize.Location = New System.Drawing.Point(534, 415)
+        Me.BtnOptimize.Location = New System.Drawing.Point(502, 415)
         Me.BtnOptimize.Name = "BtnOptimize"
-        Me.BtnOptimize.Size = New System.Drawing.Size(96, 32)
+        Me.BtnOptimize.Size = New System.Drawing.Size(128, 32)
         Me.BtnOptimize.TabIndex = 0
-        Me.BtnOptimize.Text = "Convert && Save"
+        Me.BtnOptimize.Text = "Load, Convert && Save"
         Me.TT.SetToolTip(Me.BtnOptimize, "Load, convert, optimize, and save an image file")
         Me.BtnOptimize.UseVisualStyleBackColor = True
         '
         'BtnLoadKla
         '
-        Me.BtnLoadKla.Location = New System.Drawing.Point(432, 415)
+        Me.BtnLoadKla.Location = New System.Drawing.Point(400, 415)
         Me.BtnLoadKla.Name = "BtnLoadKla"
         Me.BtnLoadKla.Size = New System.Drawing.Size(96, 32)
         Me.BtnLoadKla.TabIndex = 2

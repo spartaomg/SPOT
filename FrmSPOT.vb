@@ -39,6 +39,7 @@ Public Class FrmSPOT
                     If .OutputMap Then CmdOptions += "m"
                     If .OutputCol Then CmdOptions += "c"
                     If .OutputScr Then CmdOptions += "s"
+                    If .OutputBgc Then CmdOptions += "g"
                     If .OutputCcr Then CmdOptions += "2"
                     If .OutputObm Then CmdOptions += "o"
                     If .OutputPng Then CmdOptions += "p"
@@ -313,6 +314,10 @@ Err:
         CRBitmap = New Bitmap(PicW * 2, PicH, Imaging.PixelFormat.Format32bppArgb)
         ACBitmap = New Bitmap(PicW * 2, PicH, Imaging.PixelFormat.Format32bppArgb)
 
+        ReDim BGCols(0)
+        BGCols(0) = kla(10002)
+        BGCol = BGCols(0)
+
         Dim ColorBG As Color = Color.FromArgb(C64Palettes(BGCol), C64Palettes(BGCol + 16), C64Palettes(BGCol + 32))
 
         For X As Integer = 0 To (PicW * 2) - 1
@@ -372,10 +377,6 @@ Err:
 
             Next
         Next
-
-        ReDim BGCols(0)
-        BGCols(0) = kla(10002)
-        BGCol = kla(10002)
 
         C64Bitmap = New Bitmap(PicW * 2, PicH, Imaging.PixelFormat.Format32bppArgb)
         OrigBitmap = New Bitmap(PicW * 2, PicH, Imaging.PixelFormat.Format32bppArgb)
@@ -489,13 +490,13 @@ Err:
             .Top = Height - 85 - STB.Height
         End With
 
-        With BtnLoadKla
-            .Left = Width - (.Width + 20) * 2
+        With BtnOptimize
+            .Left = Width - (.Width + 30)
             .Top = Height - 85 - STB.Height
         End With
 
-        With BtnOptimize
-            .Left = Width - (.Width + 30)
+        With BtnLoadKla
+            .Left = BtnOptimize.Left - (.Width + 6)
             .Top = Height - 85 - STB.Height
         End With
 

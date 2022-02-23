@@ -30,6 +30,7 @@ Err:
         ChkMap.Checked = My.Settings.OutputMap
         ChkCol.Checked = My.Settings.OutputCol
         ChkScr.Checked = My.Settings.OutputScr
+        ChkBgc.Checked = My.Settings.OutputBgc
         ChkC2.Checked = My.Settings.OutputCcr
         ChkRmp.Checked = My.Settings.OutputObm
         ChkPng.Checked = My.Settings.OutputPng
@@ -50,6 +51,7 @@ Err:
         My.Settings.OutputMap = ChkMap.Checked
         My.Settings.OutputCol = ChkCol.Checked
         My.Settings.OutputScr = ChkScr.Checked
+        My.Settings.OutputBgc = ChkBgc.Checked
         My.Settings.OutputCcr = ChkC2.Checked
         My.Settings.OutputObm = ChkRmp.Checked
         My.Settings.OutputPng = ChkPng.Checked
