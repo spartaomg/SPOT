@@ -1707,7 +1707,7 @@ Resort:
                 End If
 
                 'Save Koala
-                File.WriteAllBytes(SavePath + "\" + SaveName + "_0" + Hex(BGCol) + ".kla", Koala)
+                File.WriteAllBytes(SavePath + "\" + SaveName + If(FirstBGC = True, "", "_0" + Hex(BGCol)) + ".kla", Koala)
             End If
         End If
 
