@@ -8,31 +8,78 @@ Public Class FrmSPOT
         Dim FInfo, OutInfo As FileInfo
         CmdArg = Environment.GetCommandLineArgs()
 
-        If CmdArg.Length > 1 Then
-
-            Splash.Show()
+        If CmdArg.Count > 1 Then
 
             CmdLn = True
 
-            InputFilePath = LCase(CmdArg(1))                        'Input file path and name
+            Dim i As Integer = 1
 
-            CmdOptions = ""
-            CmdOut = ""
+            While i < CmdArg.Count
 
-            If CmdArg.Length > 2 Then
-                CmdOptions = LCase(CmdArg(2))                       'Command line options
-            End If
+                If i = 1 Then
+                    InputFilePath = CmdArg(i)
 
-            If CmdArg.Length > 3 Then
-                CmdOut = LCase(CmdArg(3))
-            End If
+                    If LCase(InputFilePath) = "-h" Then
+                        ShowHelp()
+                        Close()
+                        Exit Sub
+                    End If
+                ElseIf (CmdArg(i) = "-o") Or (CmdArg(i) = "-O") Then
+                    If i + 1 < CmdArg.Count Then
+                        i += 1
+                        CmdOut = CmdArg(i)
+                    Else
+                        MsgBox("***CRITICAL***" + vbNewLine + "Missing [output] parameter.", vbCritical + vbOKOnly)
+                        Close()
+                        Exit Sub
+                    End If
+                ElseIf (CmdArg(i) = "-f") Or (CmdArg(i) = "-F") Then        'output type(s)
+                    If i + 1 < CmdArg.Count Then
+                        i += 1
+                        CmdOptions = CmdArg(i)
+                    Else
+                        MsgBox("***CRITICAL***" + vbNewLine + "Missing [format] parameter.", vbCritical + vbOKOnly)
+                        Close()
+                        Exit Sub
+                    End If
+                ElseIf (CmdArg(i) = "-b") Or (CmdArg(i) = "-BF") Then        'output type(s)
+                    If i + 1 < CmdArg.Count Then
+                        i += 1
+                        CmdColors = LCase(CmdArg(i))
+                    Else
+                        MsgBox("***CRITICAL***" + vbNewLine + "Missing [background color] parameter.", vbCritical + vbOKOnly)
+                        Close()
+                        Exit Sub
+                    End If
+                Else
+                    MsgBox("***CRITICAL***" + vbNewLine + "Unrecognized option: " + CmdArg(i), vbCritical + vbOKOnly)
+                    Close()
+                    Exit Sub
+                End If
+                i += 1
+            End While
 
-            If CmdArg.Length > 4 Then
-                CmdColors = LCase(CmdArg(4))
-            Else
+            If CmdColors = "" Then
                 CmdColors = "0123456789abcdef"                      'If argument is not specified, we allow any background colors
             End If
 
+            Splash.Show()
+
+            'InputFilePath = LCase(CmdArg(1))                        'Input file path and name
+
+            'CmdOptions = ""
+            'CmdOut = ""
+            'If CmdArg.Length > 2 Then
+            'CmdOptions = LCase(CmdArg(2))                       'Command line options
+            'End If
+            'If CmdArg.Length > 3 Then
+            'CmdOut = LCase(CmdArg(3))
+            'End If
+            'If CmdArg.Length > 4 Then
+            'CmdColors = LCase(CmdArg(4))
+            'Else
+            'CmdColors = "0123456789abcdef"                      'If argument is not specified, we allow any background colors
+            'End If
             If CmdOptions = "" Then
                 With My.Settings
                     If .OutputKla Then CmdOptions += "k"
@@ -80,46 +127,46 @@ Public Class FrmSPOT
             Else
                 Cursor = Cursors.WaitCursor
 
-                    Select Case LCase(FExt)
-                        Case ".kla", ".koa"
+                Select Case LCase(FExt)
+                    Case ".kla", ".koa"
                         KLA = File.ReadAllBytes(InputFilePath)
                         If KLA.Length <> 10003 Then
-                                MsgBox("Can't optimize this Koala file", vbOKOnly + vbCritical, "Invalid Koala file")
-                                Console.WriteLine("Picture optimization unsuccessful")
-                                GoTo ExitNoErr
-                            End If
+                            MsgBox("Can't optimize this Koala file", vbOKOnly + vbCritical, "Invalid Koala file")
+                            Console.WriteLine("Picture optimization unsuccessful")
+                            GoTo ExitNoErr
+                        End If
 
-                            FromKla = True
-                            OptimizeKla()
+                        FromKla = True
+                        OptimizeKla()
 
-                        Case ".png", ".bmp"
+                    Case ".png", ".bmp"
                         OrigBitmap = New Bitmap(InputFilePath)
 
                         FromKla = False
-                            ConvertPicToC64Palette()
-                            OptimizePng()
+                        ConvertPicToC64Palette()
+                        OptimizePng()
 
-                        Case Else
-                            MsgBox("File format is not supported!" + vbNewLine + vbNewLine +
-                               "SPOT accepts PNG, BMP, and KLA for input", vbOKOnly + vbInformation, "SPOT")
-                    End Select
+                    Case Else
+                        MsgBox("File format is not supported!" + vbNewLine + vbNewLine +
+                        "SPOT accepts PNG, BMP, and KLA for input", vbOKOnly + vbInformation, "SPOT")
+                End Select
 
-                    Cursor = Cursors.Default
+                Cursor = Cursors.Default
 
-                End If
-
-                Splash.Close()
-
-ExitNoErr:      Close()                                 'This will close the main form and set the exit code and exit Sparkle
-
-                Exit Sub                                'This is needed to prevent Error Chime on exit
             End If
 
-            TSSL.Text = "No file selected"
+            Splash.Close()
+
+ExitNoErr:  Close()                                 'This will close the main form and set the exit code and exit Sparkle
+
+            Exit Sub                                'This is needed to prevent Error Chime on exit
+        End If
+
+        TSSL.Text = "No file selected"
 
         Text = "SPOT - Sparta's Picture Optimizing Tool for the Commodore 64 GUI version " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString +
-                "." + My.Application.Info.Version.Build.ToString + "." + If(Len(My.Application.Info.Version.Revision.ToString) = 3, "0", "") +
-                My.Application.Info.Version.Revision.ToString ' + ")"
+        "." + My.Application.Info.Version.Build.ToString + "." + If(Len(My.Application.Info.Version.Revision.ToString) = 3, "0", "") +
+        My.Application.Info.Version.Revision.ToString ' + ")"
 
         Exit Sub
 
@@ -129,6 +176,65 @@ Err:
         Cursor = Cursors.Default
 
         If CmdArg.Length > 1 Then Close()
+
+    End Sub
+
+    Private Sub ShowHelp()
+        Dim HelpText As String = ""
+
+        HelpText += "SPOT is a small PC tool that converts .png, .bmp, and .kla images into C64 file formats "
+        HelpText += "optimized for better compression. This version of SPOT has a GUI but it can be also used as a command-line tool." + vbNewLine + vbNewLine
+        HelpText += "Command-line usage" + vbNewLine
+        HelpText += "---------------------------" + vbNewLine + vbNewLine
+        HelpText += "spot input -o [output] -f [format] -b [bgcolor]" + vbNewLine + vbNewLine
+        HelpText += "input:   An input image file to be optimized/converted. Only .png, .bmp, and .kla file types are accepted." + vbNewLine + vbNewLine
+        HelpText += "output:  The output folder and file name. File extension (if exists) will be ignored. If omitted, SPOT will create "
+        HelpText += "a <spot/input> folder and the input file's name will be used as output file name." + vbNewLine + vbNewLine
+        HelpText += "format:  Output file formats: kmscg2obpj. This parameter is optional. If omitted, then the default Koala file will be created."
+        HelpText += "Select as many as you want in any order:" + vbNewLine
+        HelpText += "           k - .kla (Koala - 10003 bytes)" + vbNewLine
+        HelpText += "           m - .map (bitmap data)" + vbNewLine
+        HelpText += "           s - .scr (screen RAM data)" + vbNewLine
+        HelpText += "           c - .col (color RAM data)" + vbNewLine
+        HelpText += "           g - .bgc (background color)" + vbNewLine
+        HelpText += "           2 - .ccr (compressed color RAM data): two adjacent half bytes are combined to reduce the size of the color RAM to 500 bytes." + vbNewLine
+        HelpText += "           o - .obm (optimized bitmap - 9503 bytes): bitmap data is stored column wise. Screen RAM and compressed color RAM are stored "
+        HelpText += "row wise. First two bytes are address bytes ($00, $60) and the last one is " + vbNewLine
+
+        HelpText += "                   the background color as in the Koala format. File size:  9503 bytes. In most cases, this format compresses somewhat better than Koala but it also needs a more "
+        HelpText += "complex display routine." + vbNewLine
+        HelpText += "           b - .bmp" + vbNewLine
+        HelpText += "           p - .png" + vbNewLine
+        HelpText += "           j - .jpg" + vbNewLine + vbNewLine
+        HelpText += "bgcolor: Output background color(s): 0123456789abcdef or x. SPOT will only create C64 files using the selected "
+        HelpText += "background color(s). If x is used as value then only the first possible background color will be used," + vbNewLine
+        HelpText += "           all other possible background colors will be ignored. If this option is omitted, then SPOT will generate "
+        HelpText += "output files using all possible background colors. If more than one background color is possible (and " + vbNewLine
+        HelpText += "           allowed) then SPOT will append the background color to the output file name." + vbNewLine + vbNewLine
+        HelpText += "Examples" + vbNewLine
+        HelpText += "------------" + vbNewLine + vbNewLine
+        HelpText += "spot picture.bmp -o newfolder/newfile -f msc -b 0" + vbNewLine
+        HelpText += "SPOT will convert <picture.bmp> to .map, .scr, and .col formats with black as background color and will save them to "
+        HelpText += "the <newfolder> folder using <newfile> as output base filename." + vbNewLine + vbNewLine
+        HelpText += "spot picture.png -o newfolder/newfile -f msc" + vbNewLine
+        HelpText += "SPOT will convert <picture.png> to .map, .scr, and .col formats with all possible background colors and will save them "
+        HelpText += "to the <newfolder> folder using <newfile> as output base filename." + vbNewLine + vbNewLine
+        HelpText += "spot picture.png -o newfolder/newfile" + vbNewLine
+        HelpText += "SPOT will convert <picture.png> to the default Koala format with all possible background colors and will save the "
+        HelpText += "output to the <newfolder> folder using <newfile> as output base filename." + vbNewLine + vbNewLine
+        HelpText += "spot picture.png" + vbNewLine
+        HelpText += "SPOT will convert <picture.png> to the default Koala format with all possible background colors and will save the "
+        HelpText += "output to the <spot/picture> folder using <picture> as output base filename" + vbNewLine + vbNewLine
+        HelpText += "Notes" + vbNewLine
+        HelpText += "-------" + vbNewLine + vbNewLine
+        HelpText += "SPOT recognizes several C64 palettes. If a direct palette match is not found then it will convert colors to "
+        HelpText += "a standard C64 palette using a lowest-cost algorithm." + vbNewLine + vbNewLine
+        HelpText += "SPOT can handle non-standard image sizes (such as the vertical bitmap in Memento Mori and the diagonal bitmap "
+        HelpText += "in Christmas Megademo). When a .kla or .obm file is created from a non-standard sized image, SPOT takes a centered "
+        HelpText += """snapshot"" of the image and saves that as .kla or .obm. Map, screen RAM, and color RAM files can be of any size." + vbNewLine + vbNewLine
+        HelpText += "SPOT is meant to convert and optimize multicolor bitmaps (hi-res images get converted to multicolor)." + vbNewLine + vbNewLine
+
+        MsgBox(HelpText, vbInformation + vbOKOnly, "SPOT help")
 
     End Sub
 

@@ -910,10 +910,10 @@ Resort:
             ScrRAM(I) = ((ScrHi(I) Mod 16) * 16) + (ScrLo(I) Mod 16)
         Next
 
-        IO.File.WriteAllBytes(SpotFolder + "\ColRAM_CS.bin", ColRAM)
-        IO.File.WriteAllBytes(SpotFolder + "\ScrHi_CS.bin", ScrHi)
-        IO.File.WriteAllBytes(SpotFolder + "\ScrLo_CS.bin", ScrLo)
-        IO.File.WriteAllBytes(SpotFolder + "\ScrRAM_CS.bin", ScrRAM)
+        File.WriteAllBytes(SpotFolder + "\ColRAM_CS.bin", ColRAM)
+        File.WriteAllBytes(SpotFolder + "\ScrHi_CS.bin", ScrHi)
+        File.WriteAllBytes(SpotFolder + "\ScrLo_CS.bin", ScrLo)
+        File.WriteAllBytes(SpotFolder + "\ScrRAM_CS.bin", ScrRAM)
 
         '----------------------------------------------------------------------------
         'Rebuild the image
@@ -1946,10 +1946,10 @@ Resort:
             ScrRAM(I) = ((ScrHi(I) Mod 16) * 16) + (ScrLo(I) Mod 16)
         Next
 
-        'IO.File.WriteAllBytes(SpotFolder + "\ColRAM.bin", ColRAM)
-        'IO.File.WriteAllBytes(SpotFolder + "\ScrHi.bin", ScrHi)
-        'IO.File.WriteAllBytes(SpotFolder + "\ScrLo.bin", ScrLo)
-        'IO.File.WriteAllBytes(SpotFolder + "\ScrRAM.bin", ScrRAM)
+        'File.WriteAllBytes(SpotFolder + "\ColRAM.bin", ColRAM)
+        'File.WriteAllBytes(SpotFolder + "\ScrHi.bin", ScrHi)
+        'File.WriteAllBytes(SpotFolder + "\ScrLo.bin", ScrLo)
+        'File.WriteAllBytes(SpotFolder + "\ScrRAM.bin", ScrRAM)
 
         '----------------------------------------------------------------------------
         'Rebuild the image
