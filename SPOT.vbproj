@@ -114,6 +114,7 @@
     <Compile Include="FrmSettings.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="ModHungarian.vb" />
     <Compile Include="ModOptimize.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
