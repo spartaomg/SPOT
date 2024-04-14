@@ -392,7 +392,7 @@ Err:
             kla = File.ReadAllBytes(.FileName)
         End With
 
-        If (kla.Count <> 10003) Or (kla(0) <> 0) Or (kla(1) <> &H60) Then
+        If kla.Count <> 10003 Then
             MsgBox("Hmm... This does not appear to be a Koala image...", vbOKOnly + vbExclamation, "Error loading Koala image file")
             Exit Sub
         End If
