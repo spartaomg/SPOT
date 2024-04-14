@@ -114,6 +114,19 @@ Friend Module ModOptimize
 
         FrmSPOT.PbxPic.Image = C64Bitmap
 
+        'Dim C64Bin((PicW * 2 * PicH * 4) - 1) As Byte
+
+        'For y = 0 To PicH - 1
+        'For x = 0 To (PicW * 2) - 1
+        'Dim Clr As Color = C64Bitmap.GetPixel(x, y)
+        'C64Bin((y * PicW * 2 * 4) + (x * 4) + 0) = Clr.R
+        'C64Bin((y * PicW * 2 * 4) + (x * 4) + 1) = Clr.G
+        'C64Bin((y * PicW * 2 * 4) + (x * 4) + 2) = Clr.B
+        'Next
+        'Next
+
+        'File.WriteAllBytes("C:\\Tmp\C64BitmapVB.bin", C64Bin)
+
         OptimizeKla = OptimizePng()
 
         Exit Function
@@ -365,6 +378,8 @@ Err:
                 Pic((Y * PicW) + X) = RtoC64ConvTab(C64Bitmap.GetPixel(X * 2, Y).R)
             Next
         Next
+
+        'File.WriteAllBytes("C:\Tmp\PicVB.bin", Pic)
 
         'Fill all three Color Tabs with a value that is not used by either the image or the C64
         For I As Integer = 0 To CT0.Count - 1
@@ -1170,13 +1185,9 @@ Resort:
             'Calculate overlap with the color spaces separately for each color
             For I = 0 To ColTab1.Count - 1
                 If (ColMap(I, MUC(J)) = 255) Then
-                    If (ScrHi(I) <> 255) Then
-                        OverlapSH += 1
-                    ElseIf (ScrLo(I) <> 255) Then
-                        OverlapSL += 1
-                    ElseIf (ColRAM(I) <> 255) Then
-                        OverlapCR += 1
-                    End If
+                    If (ScrHi(I) <> 255) Then OverlapSH += 1
+                    If (ScrLo(I) <> 255) Then OverlapSL += 1
+                    If (ColRAM(I) <> 255) Then OverlapCR += 1
                 End If
             Next
 
@@ -1256,29 +1267,29 @@ Resort:
         End If
 
         For I As Integer = 1 To ColRAM.Count - 2
-            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) And (ScrHi(I - 1) <> 255) And (ScrHi(I + 1) <> 255) Then
-                If ScrLo(I) = 255 Then
+            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) Then
+                If ((ScrLo(I) = 255) And (ScrLo(I - 1) = ScrHi(I))) Or ((ScrLo(I) = 255) And (ScrLo(I + 1) = ScrHi(I))) Then
                     ScrLo(I) = ScrHi(I)
                     ScrHi(I) = 255
-                ElseIf ColRAM(I) = 255 Then
+                ElseIf ((ColRAM(I) = 255) And (ColRAM(I - 1) = ScrHi(I))) Or ((ColRAM(I) = 255) And (ColRAM(I + 1) = ScrHi(I))) Then
                     ColRAM(I) = ScrHi(I)
                     ScrHi(I) = 255
                 End If
             End If
-            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) And (ScrLo(I - 1) <> 255) And (ScrLo(I + 1) <> 255) Then
-                If ColRAM(I) = 255 Then
+            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) Then
+                If ((ColRAM(I) = 255) And (ColRAM(I - 1) = ScrLo(I))) Or ((ColRAM(I) = 255) And (ColRAM(I + 1) = ScrLo(I))) Then
                     ColRAM(I) = ScrLo(I)
                     ScrLo(I) = 255
-                ElseIf ScrHi(I) = 255 Then
+                ElseIf ((ScrHi(I) = 255) And (ScrHi(I - 1) = ScrLo(I))) Or ((ScrHi(I) = 255) And (ScrHi(I + 1) = ScrLo(I))) Then
                     ScrHi(I) = ScrLo(I)
                     ScrLo(I) = 255
                 End If
             End If
-            If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) And (ColRAM(I - 1) <> 255) And (ColRAM(I + 1) <> 255) Then
-                If ScrHi(I) = 255 Then
+            If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) Then
+                If ((ScrHi(I) = 255) And (ScrHi(I - 1) = ColRAM(I))) Or ((ScrHi(I) = 255) And (ScrHi(I + 1) = ColRAM(I))) Then
                     ScrHi(I) = ColRAM(I)
                     ColRAM(I) = 255
-                ElseIf ScrLo(I) = 255 Then
+                ElseIf ((ScrLo(I) = 255) And (ScrLo(I - 1) = ColRAM(I))) Or ((ScrLo(I) = 255) And (ScrLo(I + 1) = ColRAM(I))) Then
                     ScrLo(I) = ColRAM(I)
                     ColRAM(I) = 255
                 End If
@@ -1287,79 +1298,81 @@ Resort:
 
         '----------------------------------------------------------------------------
         'Find loner bytes that can be swapped
-        For I As Integer = 1 To ColRAM.Count - 2
-            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) Then
-                If ScrHi(I) = ScrLo(I + 1) Then
-                    If (ScrLo(I) <> ScrLo(I - 1)) Then
-                        ScrHi(I) = ScrLo(I)
-                        ScrLo(I) = ScrLo(I + 1)
-                    End If
-                ElseIf ScrHi(I) = ScrLo(I - 1) Then
-                    If (ScrLo(I) <> ScrLo(I + 1)) Then
-                        ScrHi(I) = ScrLo(I)
-                        ScrLo(I) = ScrLo(I - 1)
-                    End If
-                ElseIf ScrHi(I) = ColRAM(I + 1) Then
-                    If (ColRAM(I) <> ColRAM(I - 1)) Then
-                        ScrHi(I) = ColRAM(I)
-                        ColRAM(I) = ColRAM(I + 1)
-                    End If
-                ElseIf ScrHi(I) = ColRAM(I - 1) Then
-                    If (ColRAM(I) <> ColRAM(I + 1)) Then
-                        ScrHi(I) = ColRAM(I)
-                        ColRAM(I) = ColRAM(I - 1)
-                    End If
-                End If
-            End If
+        'For I As Integer = 1 To ColRAM.Count - 2
+        'If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrHi(I) <> 255) Then
+        'If ScrHi(I) = ScrLo(I + 1) Then
+        'If (ScrLo(I) <> ScrLo(I - 1)) Then
+        'ScrHi(I) = ScrLo(I)
+        'ScrLo(I) = ScrLo(I + 1)
+        'End If
+        'ElseIf ScrHi(I) = ScrLo(I - 1) Then
+        'If (ScrLo(I) <> ScrLo(I + 1)) Then
+        'ScrHi(I) = ScrLo(I)
+        'ScrLo(I) = ScrLo(I - 1)
+        'End If
+        'ElseIf ScrHi(I) = ColRAM(I + 1) Then
+        'If (ColRAM(I) <> ColRAM(I - 1)) Then
+        'ScrHi(I) = ColRAM(I)
+        'ColRAM(I) = ColRAM(I + 1)
+        'End If
+        'ElseIf ScrHi(I) = ColRAM(I - 1) Then
+        'If (ColRAM(I) <> ColRAM(I + 1)) Then
+        'ScrHi(I) = ColRAM(I)
+        'ColRAM(I) = ColRAM(I - 1)
+        'End If
+        'End If
+        'End If
 
-            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) Then
-                If ScrLo(I) = ScrHi(I + 1) Then
-                    If (ScrHi(I) <> ScrHi(I - 1)) Then
-                        ScrLo(I) = ScrHi(I)
-                        ScrHi(I) = ScrHi(I + 1)
-                    End If
-                ElseIf ScrLo(I) = ScrHi(I - 1) Then
-                    If (ScrHi(I) <> ScrHi(I + 1)) Then
-                        ScrLo(I) = ScrHi(I)
-                        ScrHi(I) = ScrHi(I - 1)
-                    End If
-                ElseIf ScrLo(I) = ColRAM(I + 1) Then
-                    If (ColRAM(I) <> ColRAM(I - 1)) Then
-                        ScrLo(I) = ColRAM(I)
-                        ColRAM(I) = ColRAM(I + 1)
-                    End If
-                ElseIf ScrLo(I) = ColRAM(I - 1) Then
-                    If (ColRAM(I) <> ColRAM(I + 1)) Then
-                        ScrLo(I) = ColRAM(I)
-                        ColRAM(I) = ColRAM(I - 1)
-                    End If
-                End If
-            End If
+        'If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ScrLo(I) <> 255) Then
+        'If ScrLo(I) = ScrHi(I + 1) Then
+        'If (ScrHi(I) <> ScrHi(I - 1)) Then
+        'ScrLo(I) = ScrHi(I)
+        'ScrHi(I) = ScrHi(I + 1)
+        'End If
+        'ElseIf ScrLo(I) = ScrHi(I - 1) Then
+        'If (ScrHi(I) <> ScrHi(I + 1)) Then
+        'ScrLo(I) = ScrHi(I)
+        'ScrHi(I) = ScrHi(I - 1)
+        'End If
+        'ElseIf ScrLo(I) = ColRAM(I + 1) Then
+        'If (ColRAM(I) <> ColRAM(I - 1)) Then
+        'ScrLo(I) = ColRAM(I)
+        'ColRAM(I) = ColRAM(I + 1)
+        'End If
+        'ElseIf ScrLo(I) = ColRAM(I - 1) Then
+        'If (ColRAM(I) <> ColRAM(I + 1)) Then
+        'ScrLo(I) = ColRAM(I)
+        'ColRAM(I) = ColRAM(I - 1)
+        'End If
+        'End If
+        'End If
 
-            If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) Then
-                If ColRAM(I) = ScrLo(I + 1) Then
-                    If (ScrLo(I) <> ScrLo(I - 1)) Then
-                        ColRAM(I) = ScrLo(I)
-                        ScrLo(I) = ScrLo(I + 1)
-                    End If
-                ElseIf ColRAM(I) = ScrLo(I - 1) Then
-                    If (ScrLo(I) <> ScrLo(I + 1)) Then
-                        ColRAM(I) = ScrLo(I)
-                        ScrLo(I) = ScrLo(I - 1)
-                    End If
-                ElseIf ColRAM(I) = ScrHi(I + 1) Then
-                    If (ScrHi(I) <> ScrHi(I - 1)) Then
-                        ColRAM(I) = ScrHi(I)
-                        ScrHi(I) = ScrHi(I + 1)
-                    End If
-                ElseIf ColRAM(I) = ScrHi(I - 1) Then
-                    If (ScrHi(I) <> ScrHi(I + 1)) Then
-                        ColRAM(I) = ScrHi(I)
-                        ScrHi(I) = ScrHi(I - 1)
-                    End If
-                End If
-            End If
-        Next
+        'If (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) And (ColRAM(I) <> 255) Then
+        'If ColRAM(I) = ScrLo(I + 1) Then
+        'If (ScrLo(I) <> ScrLo(I - 1)) Then
+        'ColRAM(I) = ScrLo(I)
+        'ScrLo(I) = ScrLo(I + 1)
+        'End If
+        'ElseIf ColRAM(I) = ScrLo(I - 1) Then
+        'If (ScrLo(I) <> ScrLo(I + 1)) Then
+        'ColRAM(I) = ScrLo(I)
+        'ScrLo(I) = ScrLo(I - 1)
+        'End If
+        'ElseIf ColRAM(I) = ScrHi(I + 1) Then
+        'If (ScrHi(I) <> ScrHi(I - 1)) Then
+        'ColRAM(I) = ScrHi(I)
+        'ScrHi(I) = ScrHi(I + 1)
+        'End If
+        'ElseIf ColRAM(I) = ScrHi(I - 1) Then
+        'If (ScrHi(I) <> ScrHi(I + 1)) Then
+        'ColRAM(I) = ScrHi(I)
+        'ScrHi(I) = ScrHi(I - 1)
+        'End If
+        'End If
+        'End If
+        'Next
+
+        '----------------------------------------------------
 
         'For I As Integer = 1 To ColRAM.Count - 3
         'If (ScrHi(I) = ScrHi(I + 1)) And (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 2)) And (ScrHi(I) <> 255) Then
@@ -1603,6 +1616,323 @@ Resort:
 
         'RetroArrangeBitmap()
 
+        'Find color overlaps (same color in different color spaces) And eliminate them by extending previous Or following sequence (whichever Is longer)
+
+        For I As Integer = 1 To ColRAM.Count - 2
+
+            Dim LastMatch As Integer = 0
+
+            If ScrHi(I) = ScrLo(I) Then
+                Dim HiBefore As Byte = ScrHi(I - 1)
+                Dim LoBefore As Byte = ScrLo(I - 1)
+                Dim HiAfter As Byte = &H10
+                Dim LoAfter As Byte = &H10
+
+                Dim SeqBefore1 As Integer = 0
+                Dim SeqBefore2 As Integer = 0
+                Dim SeqAfter1 As Integer = 0
+                Dim SeqAfter2 As Integer = 0
+
+                For J As Integer = I To ColRAM.Count - 2
+                    If ScrHi(J) = ScrLo(J) Then
+                        LastMatch = J
+                    Else
+                        HiAfter = ScrHi(J)
+                        LoAfter = ScrLo(J)
+                        Exit For
+                    End If
+                Next
+
+                For J As Integer = I - 1 To 0 Step -1
+                    If ScrHi(J) = ScrHi(I - 1) Then
+                        SeqBefore1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = I - 1 To 0 Step -1
+                    If ScrLo(J) = ScrLo(I - 1) Then
+                        SeqBefore2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ScrHi(J) = ScrHi(LastMatch + 1) Then
+                        SeqAfter1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ScrLo(J) = ScrLo(LastMatch + 1) Then
+                        SeqAfter2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+
+                If (SeqBefore1 >= SeqBefore2) And (SeqBefore1 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If HiBefore <> ScrHi(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiAfter
+                        Next
+                    End If
+                ElseIf (SeqBefore2 >= SeqBefore1) And (SeqBefore2 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If LoBefore <> ScrLo(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoAfter
+                        Next
+                    End If
+                ElseIf (SeqAfter1 >= SeqBefore1) And (SeqAfter1 >= SeqBefore2) And (SeqAfter1 >= SeqAfter2) Then
+                    If HiAfter <> ScrHi(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiBefore
+                        Next
+                    End If
+                Else
+                    If LoAfter <> ScrLo(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoBefore
+                        Next
+                    End If
+                End If
+            End If
+
+            If ScrHi(I) = ColRAM(I) Then
+                Dim HiBefore As Byte = ScrHi(I - 1)
+                Dim CRBefore As Byte = ColRAM(I - 1)
+                Dim HiAfter As Byte = &H10
+                Dim CRAfter As Byte = &H10
+
+                Dim SeqBefore1 As Integer = 0
+                Dim SeqBefore2 As Integer = 0
+                Dim SeqAfter1 As Integer = 0
+                Dim SeqAfter2 As Integer = 0
+
+                For J As Integer = I To ColRAM.Count - 2
+                    If ScrHi(J) = ColRAM(J) Then
+                        LastMatch = J
+                    Else
+                        HiAfter = ScrHi(J)
+                        CRAfter = ColRAM(J)
+                        Exit For
+                    End If
+                Next
+
+                For J As Integer = I - 1 To 0 Step -1
+                    If ScrHi(J) = ScrHi(I - 1) Then
+                        SeqBefore1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = I - 1 To 0 Step -1
+                    If ColRAM(J) = ColRAM(I - 1) Then
+                        SeqBefore2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ScrHi(J) = ScrHi(LastMatch + 1) Then
+                        SeqAfter1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ColRAM(J) = ColRAM(LastMatch + 1) Then
+                        SeqAfter2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+
+                If (SeqBefore1 >= SeqBefore2) And (SeqBefore1 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If HiBefore <> ScrHi(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiAfter
+                        Next
+                    End If
+                ElseIf (SeqBefore2 >= SeqBefore1) And (SeqBefore2 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If CRBefore <> ColRAM(I) Then
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRAfter
+                        Next
+                    End If
+                ElseIf (SeqAfter1 >= SeqBefore1) And (SeqAfter1 >= SeqBefore2) And (SeqAfter1 >= SeqAfter2) Then
+                    If HiAfter <> ScrHi(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrHi(J) = HiBefore
+                        Next
+                    End If
+                Else
+                    If CRAfter <> ColRAM(I) Then
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRBefore
+                        Next
+                    End If
+                End If
+            End If
+
+            If ScrLo(I) = ColRAM(I) Then
+                Dim LoBefore As Byte = ScrLo(I - 1)
+                Dim CRBefore As Byte = ColRAM(I - 1)
+                Dim LoAfter As Byte = &H10
+                Dim CRAfter As Byte = &H10
+
+                Dim SeqBefore1 As Integer = 0
+                Dim SeqBefore2 As Integer = 0
+                Dim SeqAfter1 As Integer = 0
+                Dim SeqAfter2 As Integer = 0
+
+                For J As Integer = I To ColRAM.Count - 2
+                    If ScrLo(J) = ColRAM(J) Then
+                        LastMatch = J
+                    Else
+                        LoAfter = ScrLo(J)
+                        CRAfter = ColRAM(J)
+                        Exit For
+                    End If
+                Next
+
+                For J As Integer = I - 1 To 0 Step -1
+                    If ScrLo(J) = ScrLo(I - 1) Then
+                        SeqBefore1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = I - 1 To 0 Step -1
+                    If ColRAM(J) = ColRAM(I - 1) Then
+                        SeqBefore2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ScrLo(J) = ScrLo(LastMatch + 1) Then
+                        SeqAfter1 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+                For J As Integer = LastMatch + 1 To ColRAM.Count - 1
+                    If ColRAM(J) = ColRAM(LastMatch + 1) Then
+                        SeqAfter2 += 1
+                    Else
+                        Exit For
+                    End If
+                Next
+
+                If (SeqBefore1 >= SeqBefore2) And (SeqBefore1 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If LoBefore <> ScrLo(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoAfter
+                        Next
+                    End If
+                ElseIf (SeqBefore2 >= SeqBefore1) And (SeqBefore2 >= SeqAfter1) And (SeqBefore1 >= SeqAfter2) Then
+                    If CRBefore <> ColRAM(I) Then
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRBefore
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRAfter
+                        Next
+                    End If
+                ElseIf (SeqAfter1 >= SeqBefore1) And (SeqAfter1 >= SeqBefore2) And (SeqAfter1 >= SeqAfter2) Then
+                    If LoAfter <> ScrLo(I) Then
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ScrLo(J) = LoBefore
+                        Next
+                    End If
+                Else
+                    If CRAfter <> ColRAM(I) Then
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRAfter
+                        Next
+                    Else
+                        For J As Integer = I To LastMatch
+                            ColRAM(J) = CRBefore
+                        Next
+                    End If
+                End If
+            End If
+        Next
+
+        For I As Integer = 1 To ColRAM.Count - 2
+            Dim Chng = False
+            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) Then
+                If (ScrHi(I) = ScrLo(I - 1)) Or (ScrLo(I) = ScrHi(I - 1)) Then
+                    Dim Tmp As Byte = ScrLo(I)
+                    ScrLo(I) = ScrHi(I)
+                    ScrHi(I) = Tmp
+                    Chng = True
+                End If
+            End If
+            If (ScrHi(I) <> ScrHi(I - 1)) And (ScrHi(I) <> ScrHi(I + 1)) And (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) Then
+                If (ScrHi(I) = ColRAM(I - 1)) Or (ColRAM(I) = ScrHi(I - 1)) Then
+                    Dim Tmp As Byte = ColRAM(I)
+                    ColRAM(I) = ScrHi(I)
+                    ScrHi(I) = Tmp
+                    Chng = True
+                End If
+            End If
+            If (ScrLo(I) <> ScrLo(I - 1)) And (ScrLo(I) <> ScrLo(I + 1)) And (ColRAM(I) <> ColRAM(I - 1)) And (ColRAM(I) <> ColRAM(I + 1)) Then
+                If (ScrLo(I) = ColRAM(I - 1)) Or (ColRAM(I) = ScrLo(I - 1)) Then
+                    Dim Tmp As Byte = ColRAM(I)
+                    ColRAM(I) = ScrLo(I)
+                    ScrLo(I) = Tmp
+                    Chng = True
+                End If
+            End If
+            If Chng = True Then
+                I -= 1
+            End If
+        Next
+
         If CmdLn = False Then
             FrmSPOT.TSSL.Text = "Preparing screen RAM..."
             FrmSPOT.Refresh()
@@ -1611,7 +1941,7 @@ Resort:
         'Combine screen RAM hi and low nibbles
         For I As Integer = 0 To ScrRAM.Count - 1
             Dim Tmp As Byte = ColRAM(I)
-            ColRAM(I) = ScrLo(I)                    'Swab ColRAM with ScrLo - this results in improved compressibility
+            ColRAM(I) = ScrLo(I)                    'Swap ColRAM with ScrLo - this results in improved compressibility
             ScrLo(I) = Tmp
             ScrRAM(I) = ((ScrHi(I) Mod 16) * 16) + (ScrLo(I) Mod 16)
         Next

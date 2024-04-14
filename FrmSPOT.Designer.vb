@@ -51,8 +51,8 @@ Partial Class FrmSPOT
         Me.BtnOptimize.Name = "BtnOptimize"
         Me.BtnOptimize.Size = New System.Drawing.Size(128, 32)
         Me.BtnOptimize.TabIndex = 0
-        Me.BtnOptimize.Text = "Load, Convert && Save"
-        Me.TT.SetToolTip(Me.BtnOptimize, "Load, convert, optimize, and save an image file")
+        Me.BtnOptimize.Text = "Load, Optimize && Save"
+        Me.TT.SetToolTip(Me.BtnOptimize, "Load, optimize, and save an image file")
         Me.BtnOptimize.UseVisualStyleBackColor = True
         '
         'BtnLoadKla

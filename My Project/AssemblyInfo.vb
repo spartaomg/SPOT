@@ -8,11 +8,11 @@ Imports System.Runtime.InteropServices
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("Sparta's Picture Optimizing Tool for the C64")>
-<Assembly: AssemblyDescription("Sparta's Picture Optimizing Tool for the C64")>
+<Assembly: AssemblyTitle("Sparta's Picture Optimizing Tool for the C64 (GUI version)")>
+<Assembly: AssemblyDescription("Sparta's Picture Optimizing Tool for the C64 (GUI version)")>
 <Assembly: AssemblyCompany("Sparta")>
 <Assembly: AssemblyProduct("SPOT")>
-<Assembly: AssemblyCopyright("Copyright © Sparta 2020-2022")>
+<Assembly: AssemblyCopyright("Copyright © Sparta 2020-2024")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")>
 
-<Assembly: AssemblyVersion("1.2.22.0222")>
-<Assembly: AssemblyFileVersion("1.2.22.0222")>
+<Assembly: AssemblyVersion("1.3.24.0413")>
+<Assembly: AssemblyFileVersion("1.3.24.0413")>

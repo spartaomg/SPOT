@@ -117,7 +117,7 @@ ExitNoErr:      Close()                                 'This will close the mai
 
             TSSL.Text = "No file selected"
 
-        Text = "SPOT - Sparta's Picture Optimizing Tool for the Commodore 64 v" + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString +
+        Text = "SPOT - Sparta's Picture Optimizing Tool for the Commodore 64 GUI version " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString +
                 "." + My.Application.Info.Version.Build.ToString + "." + If(Len(My.Application.Info.Version.Revision.ToString) = 3, "0", "") +
                 My.Application.Info.Version.Revision.ToString ' + ")"
 
