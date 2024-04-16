@@ -424,7 +424,7 @@ Err:
         BGCols(0) = kla(10002)
         BGCol = BGCols(0)
 
-        Dim ColorBG As Color = Color.FromArgb(C64Palettes(BGCol), C64Palettes(BGCol + 16), C64Palettes(BGCol + 32))
+        Dim ColorBG As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (BGCol * 4) + 1), C64Palettes(VICE_36_Pixcen + (BGCol * 4) + 2), C64Palettes(VICE_36_Pixcen + (BGCol * 4) + 3))
 
         For X As Integer = 0 To (PicW * 2) - 1
             For Y As Integer = 0 To PicH - 1
@@ -436,9 +436,9 @@ Err:
             For CX = 0 To CharCol - 1
                 Dim CP As Integer = (CY * CharCol) + CX
 
-                Dim ColorSH As Color = Color.FromArgb(C64Palettes(ScrHi(CP)), C64Palettes(ScrHi(CP) + 16), C64Palettes(ScrHi(CP) + 32))
-                Dim ColorSL As Color = Color.FromArgb(C64Palettes(ScrLo(CP)), C64Palettes(ScrLo(CP) + 16), C64Palettes(ScrLo(CP) + 32))
-                Dim ColorCR As Color = Color.FromArgb(C64Palettes(ColRAM(CP)), C64Palettes(ColRAM(CP) + 16), C64Palettes(ColRAM(CP) + 32))
+                Dim ColorSH As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 3))
+                Dim ColorSL As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 3))
+                Dim ColorCR As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 3))
                 Dim ColorBl As Color = Color.FromArgb(0, 255, 0)
 
                 For X As Integer = 0 To 5
@@ -520,7 +520,7 @@ Err:
                         Col = ColRAM(CI)
                 End Select
 
-                Dim RGB As Color = Color.FromArgb(C64Palettes(Col), C64Palettes(Col + 16), C64Palettes(Col + 32))
+                Dim RGB As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (Col * 4) + 1), C64Palettes(VICE_36_Pixcen + (Col * 4) + 2), C64Palettes(VICE_36_Pixcen + (Col * 4) + 3))
 
                 C64Bitmap.SetPixel(X * 2, Y, RGB)
                 C64Bitmap.SetPixel((X * 2) + 1, Y, RGB)

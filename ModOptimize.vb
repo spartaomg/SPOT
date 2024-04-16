@@ -19,12 +19,17 @@ Friend Module ModOptimize
     Public CharCol As Integer
     Public CharRow As Integer
     Public ReadOnly RtoC64ConvTab() As Byte = My.Resources.PaletteConvTab
+
     Public ReadOnly C64Palettes() As Byte = My.Resources.C64Palettes
-    Public PaletteCnt As Integer = C64Palettes.Count / 48
+    Public PaletteLen = 64
+    Public VICE_36_Pixcen As Integer = 18 * PaletteLen
+    Public NumPalettes As Integer = C64Palettes.Count / PaletteLen
+
     Public Pic(), PicMsk() As Byte   'Original picture array
     Public BMP() As Byte   'C64 bitmap array
     Public ColTab0(), ColTab1(), ColTab2(), ColTab3() As Byte  'For color tabs
     Public BGCol, BGCols(-1) As Byte   'Background color
+
 
     Public MUC(15) As Byte
 
@@ -103,7 +108,7 @@ Friend Module ModOptimize
                         Col = ColTab3(CI)
                 End Select
 
-                Dim RGB As Color = Color.FromArgb(C64Palettes(Col), C64Palettes(Col + 16), C64Palettes(Col + 32))
+                Dim RGB As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (Col * 4) + 1), C64Palettes(VICE_36_Pixcen + (Col * 4) + 2), C64Palettes(VICE_36_Pixcen + (Col * 4) + 3))
 
                 C64Bitmap.SetPixel(X * 2, Y, RGB)
                 C64Bitmap.SetPixel((X * 2) + 1, Y, RGB)
@@ -171,22 +176,25 @@ Err:
         Dim dR, dG, dB, uR As Integer
         Dim dH, dS, dV, BestHSV As Double
         Dim BestMatch, BestMatchIndex As Integer
-        Dim BestPalette(PaletteCnt - 1) As Integer
+        Dim BestPalette(NumPalettes - 1) As Integer
         Dim BestPaletteIndex As Integer
 
         C64Bitmap = New Bitmap(OrigBitmap.Width, OrigBitmap.Height, Imaging.PixelFormat.Format32bppArgb)
 
         'First check if there is a direct palette match
         Dim PaletteMatch As Boolean
-        For P As Integer = 0 To PaletteCnt - 1
+        For P As Integer = 0 To NumPalettes - 1
+            If P = (VICE_36_Pixcen / PaletteLen) Then
+                P += 0
+            End If
             For Y As Integer = 0 To PicH - 1
                 For X As Integer = 0 To PicW - 1
                     PaletteMatch = False
                     PicCol = OrigBitmap.GetPixel(X * 2, Y)
                     For J As Integer = 0 To 15
-                        If (C64Palettes((48 * P) + J) = PicCol.R) And (C64Palettes((48 * P) + 16 + J) = PicCol.G) And (C64Palettes((48 * P) + 32 + J) = PicCol.B) Then
+                        If (C64Palettes((64 * P) + (J * 4) + 1) = PicCol.R) And (C64Palettes((64 * P) + (J * 4) + 2) = PicCol.G) And (C64Palettes((64 * P) + (J * 4) + 3) = PicCol.B) Then
                             'Use default palette 
-                            Dim NewColor As Color = Color.FromArgb(C64Palettes(J), C64Palettes(J + 16), C64Palettes(J + 32))
+                            Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (J * 4) + 1), C64Palettes(VICE_36_Pixcen + (J * 4) + 2), C64Palettes(VICE_36_Pixcen + (J * 4) + 3))
 
                             C64Bitmap.SetPixel(X * 2, Y, NewColor)
                             C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
@@ -215,12 +223,12 @@ Err:
 
                 BestMatch = &H10000000
 
-                For P As Integer = 0 To PaletteCnt - 1
+                For P As Integer = 0 To NumPalettes - 1
                     For J As Integer = 0 To 15
-                        uR = (R + CInt(C64Palettes((P * 48) + J))) / 2
-                        dR = R - CInt(C64Palettes((P * 48) + J))
-                        dG = G - CInt(C64Palettes((P * 48) + J + 16))
-                        dB = B - CInt(C64Palettes((P * 48) + J + 32))
+                        uR = (R + CInt(C64Palettes((P * 64) + (J * 4) + 1))) / 2
+                        dR = R - CInt(C64Palettes((P * 64) + (J * 4) + 1))
+                        dG = G - CInt(C64Palettes((P * 64) + (J * 4) + 2))
+                        dB = B - CInt(C64Palettes((P * 64) + (J * 4) + 3))
                         Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
                         If cDiff < BestMatch Then
                             BestMatch = cDiff
@@ -235,7 +243,7 @@ Err:
 
         BestPaletteIndex = -1
         Dim BP As Integer = 0
-        For I As Integer = 0 To PaletteCnt - 1
+        For I As Integer = 0 To NumPalettes - 1
             If BestPalette(I) > BP Then
                 BP = BestPalette(I)
                 BestPaletteIndex = I
@@ -252,10 +260,10 @@ Err:
                 BestMatch = &H10000000
 
                 For J As Integer = 0 To 15
-                    uR = (R + CInt(C64Palettes((BestPaletteIndex * 48) + J))) / 2
-                    dR = R - CInt(C64Palettes((BestPaletteIndex * 48) + J))
-                    dG = G - CInt(C64Palettes((BestPaletteIndex * 48) + J + 16))
-                    dB = B - CInt(C64Palettes((BestPaletteIndex * 48) + J + 32))
+                    uR = (R + CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))) / 2
+                    dR = R - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))
+                    dG = G - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 2))
+                    dB = B - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 3))
                     Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
                     If cDiff < BestMatch Then
                         BestMatch = cDiff
@@ -264,7 +272,7 @@ Err:
                 Next
 
                 'Use default palette 
-                Dim NewColor As Color = Color.FromArgb(C64Palettes(BestMatchIndex), C64Palettes(BestMatchIndex + 16), C64Palettes(BestMatchIndex + 32))
+                Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 1), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 2), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 3))
 
                 C64Bitmap.SetPixel(X * 2, Y, NewColor)
                 C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
@@ -494,7 +502,7 @@ Err:
                 FrmSPOT.Refresh()
             End If
 
-            Dim ColorBG As Color = Color.FromArgb(C64Palettes(BGCol), C64Palettes(BGCol + 16), C64Palettes(BGCol + 32))
+            Dim ColorBG As Color = Color.FromArgb(C64Palettes((BGCol * 4) + 1), C64Palettes((BGCol * 4) + 2), C64Palettes((BGCol * 4) + 3))
 
             For X As Integer = 0 To (PicW * 2) - 1
                 For Y As Integer = 0 To PicH - 1
@@ -506,9 +514,9 @@ Err:
                 For CX = 0 To CharCol - 1
                     CP = (CY * CharCol) + CX
 
-                    Dim ColorSH As Color = Color.FromArgb(C64Palettes(ScrHi(CP)), C64Palettes(ScrHi(CP) + 16), C64Palettes(ScrHi(CP) + 32))
-                    Dim ColorSL As Color = Color.FromArgb(C64Palettes(ScrLo(CP)), C64Palettes(ScrLo(CP) + 16), C64Palettes(ScrLo(CP) + 32))
-                    Dim ColorCR As Color = Color.FromArgb(C64Palettes(ColRAM(CP)), C64Palettes(ColRAM(CP) + 16), C64Palettes(ColRAM(CP) + 32))
+                    Dim ColorSH As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ScrHi(CP) * 4) + 3))
+                    Dim ColorSL As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ScrLo(CP) * 4) + 3))
+                    Dim ColorCR As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 1), C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 2), C64Palettes(VICE_36_Pixcen + (ColRAM(CP) * 4) + 3))
                     Dim ColorBl As Color = Color.FromArgb(0, 255, 0)
 
                     For X As Integer = 0 To 5
