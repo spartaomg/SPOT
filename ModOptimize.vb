@@ -520,6 +520,11 @@ Err:
         Dim Path As String
 
         If CmdLn = False Then
+
+            If My.Settings.FirstBgcOnly = True Then
+                CmdColors = "x"
+            End If
+
             'Tool window, autosave disabled -> open Save Dialog 
             If My.Settings.Autosave = False Then
 

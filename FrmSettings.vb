@@ -37,6 +37,7 @@ Err:
         ChkBmp.Checked = My.Settings.OutputBmp
         ChkJpg.Checked = My.Settings.OutputJpg
         ChkAutoSave.Checked = My.Settings.Autosave
+        ChkFirstBGC.Checked = My.Settings.FirstBgcOnly
 
         Exit Sub
 Err:
@@ -58,6 +59,7 @@ Err:
         My.Settings.OutputBmp = ChkBmp.Checked
         My.Settings.OutputJpg = ChkJpg.Checked
         My.Settings.Autosave = ChkAutoSave.Checked
+        My.Settings.FirstBgcOnly = ChkFirstBGC.Checked
 
         My.Settings.Save()
 
@@ -77,4 +79,5 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
+
 End Class
