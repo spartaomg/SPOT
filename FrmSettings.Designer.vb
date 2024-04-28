@@ -24,6 +24,7 @@ Partial Class FrmSettings
     Private Sub InitializeComponent()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmSettings))
         Me.Panel1 = New System.Windows.Forms.Panel()
+        Me.ChkFirstBGC = New System.Windows.Forms.CheckBox()
         Me.ChkBgc = New System.Windows.Forms.CheckBox()
         Me.ChkAutoSave = New System.Windows.Forms.CheckBox()
         Me.ChkJpg = New System.Windows.Forms.CheckBox()
@@ -37,7 +38,6 @@ Partial Class FrmSettings
         Me.ChkKla = New System.Windows.Forms.CheckBox()
         Me.LblOutputFormat = New System.Windows.Forms.Label()
         Me.BtnClose = New System.Windows.Forms.Button()
-        Me.ChkFirstBGC = New System.Windows.Forms.CheckBox()
         Me.Panel1.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -61,6 +61,16 @@ Partial Class FrmSettings
         Me.Panel1.Name = "Panel1"
         Me.Panel1.Size = New System.Drawing.Size(228, 334)
         Me.Panel1.TabIndex = 0
+        '
+        'ChkFirstBGC
+        '
+        Me.ChkFirstBGC.AutoSize = True
+        Me.ChkFirstBGC.Location = New System.Drawing.Point(10, 271)
+        Me.ChkFirstBGC.Name = "ChkFirstBGC"
+        Me.ChkFirstBGC.Size = New System.Drawing.Size(213, 17)
+        Me.ChkFirstBGC.TabIndex = 12
+        Me.ChkFirstBGC.Text = "Use first possible background color only"
+        Me.ChkFirstBGC.UseVisualStyleBackColor = True
         '
         'ChkBgc
         '
@@ -184,27 +194,20 @@ Partial Class FrmSettings
         '
         'BtnClose
         '
+        Me.BtnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel
         Me.BtnClose.Location = New System.Drawing.Point(167, 353)
         Me.BtnClose.Name = "BtnClose"
         Me.BtnClose.Size = New System.Drawing.Size(75, 25)
-        Me.BtnClose.TabIndex = 5
+        Me.BtnClose.TabIndex = 0
         Me.BtnClose.Text = "Close"
         Me.BtnClose.UseVisualStyleBackColor = True
         '
-        'ChkFirstBGC
-        '
-        Me.ChkFirstBGC.AutoSize = True
-        Me.ChkFirstBGC.Location = New System.Drawing.Point(10, 271)
-        Me.ChkFirstBGC.Name = "ChkFirstBGC"
-        Me.ChkFirstBGC.Size = New System.Drawing.Size(213, 17)
-        Me.ChkFirstBGC.TabIndex = 12
-        Me.ChkFirstBGC.Text = "Use first possible background color only"
-        Me.ChkFirstBGC.UseVisualStyleBackColor = True
-        '
         'FrmSettings
         '
+        Me.AcceptButton = Me.BtnClose
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.CancelButton = Me.BtnClose
         Me.ClientSize = New System.Drawing.Size(254, 385)
         Me.Controls.Add(Me.BtnClose)
         Me.Controls.Add(Me.Panel1)
