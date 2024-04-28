@@ -51,7 +51,7 @@ Partial Class FrmSPOT
         Me.BtnOptimize.Name = "BtnOptimize"
         Me.BtnOptimize.Size = New System.Drawing.Size(128, 32)
         Me.BtnOptimize.TabIndex = 0
-        Me.BtnOptimize.Text = "Load, Optimize && Save"
+        Me.BtnOptimize.Text = "&Load, Optimize && Save"
         Me.TT.SetToolTip(Me.BtnOptimize, "Load, optimize, and save an image file")
         Me.BtnOptimize.UseVisualStyleBackColor = True
         '
@@ -61,7 +61,7 @@ Partial Class FrmSPOT
         Me.BtnLoadKla.Name = "BtnLoadKla"
         Me.BtnLoadKla.Size = New System.Drawing.Size(96, 32)
         Me.BtnLoadKla.TabIndex = 2
-        Me.BtnLoadKla.Text = "View Koala"
+        Me.BtnLoadKla.Text = "&View Koala"
         Me.TT.SetToolTip(Me.BtnLoadKla, "Load and view a Koala image (no output generated)")
         Me.BtnLoadKla.UseVisualStyleBackColor = True
         '
@@ -139,7 +139,7 @@ Partial Class FrmSPOT
         Me.BtnSettings.Name = "BtnSettings"
         Me.BtnSettings.Size = New System.Drawing.Size(96, 32)
         Me.BtnSettings.TabIndex = 1
-        Me.BtnSettings.Text = "Settings"
+        Me.BtnSettings.Text = "&Settings"
         Me.TT.SetToolTip(Me.BtnSettings, "Select output file formats")
         Me.BtnSettings.UseVisualStyleBackColor = True
         '

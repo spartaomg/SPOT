@@ -7,6 +7,12 @@ Friend Module ModOptimize
         Public Color As Integer
     End Structure
 
+    Structure YUV
+        Public Y As Double
+        Public U As Double
+        Public V As Double
+    End Structure
+
     Public CmdArg As String()
     Public CmdLn As Boolean = False
 
@@ -44,6 +50,18 @@ Friend Module ModOptimize
     Public ScrollPos As Point
 
     Private FirstBGC As Boolean = True
+
+    Dim c64palettesYUV(NumPalettes * 16 - 1) As YUV
+
+    ReadOnly PaletteNames = New String() {
+        "VICE 3.6 Pepto PAL", "VICE 3.6 Pepto PAL Old", "VICE 3.6 Pepto NTSC Sony", "VICE 3.6 Pepto NTSC Sony", "VICE 3.6 Colodore", "VICE 3.6 VICE", "VICE 3.6 C64HQ", "VICE 3.6 C64S",
+        "VICE 3.6 CCS64", "VICE 3.6 Frodo", "VICE 3.6 Godot", "VICE 3.6 PC64", "VICE 3.6 RGB", "VICE 3.6 ChristopherJam", "VICE 3.6 Deekay", "VICE 3.6 PALette",
+        "VICE 3.6 Ptoing", "VICE 3.6 Community Colors", "VICE 3.6 Pixcen", "VICE 3.6 VICE Internal", "VICE 3.6 Pepto PAL CRT", "VICE 3.6 Pepto PAL Old CRT", "VICE 3.6 Pepto NTSC Sony CRT", "VICE 3.6 Pepto NTSC CRT",
+        "VICE 3.6 Colodore CRT", "VICE 3.6 VICE CRT", "VICE 3.6 C64HQ CRT", "VICE 3.6 C64S CRT", "VICE 3.6 CCS64 CRT", "VICE 3.6 Frodo CRT", "VICE 3.6 Godot CRT", "VICE 3.6 PC64 CRT",
+        "VICE 3.6 RGB CRT", "VICE 3.6 ChristopherJam CRT", "VICE 3.6 Deekay CRT", "VICE 3.6 PALette CRT", "VICE 3.6 Ptoing CRT", "VICE 3.6 Community Colors CRT", "VICE 3.6 Pixcen CRT", "VICE 3.8 C64HQ",
+        "VICE 3.8 C64S", "VICE 3.8 CCS64", "VICE 3.8 ChristopherJam", "VICE 3.8 Colodore", "VICE 3.8 Community Colors", "VICE 3.8 Deekay", "VICE 3.8 Frodo", "VICE 3.8 Godot",
+        "VICE 3.8 PALette", "VICE 3.8 PALette 6569R1", "VICE 3.8 PALette 6569R5", "VICE 3.8 PALette 8565R2", "VICE 3.8 PC64", "VICE 3.8 Pepto NTSC Sony", "VICE 3.8 Pepto NTSC", "VICE 3.8 Pepto PAL",
+        "VICE 3.8 Pepto PAL Old", "VICE 3.8 Pixcen", "VICE 3.8 Ptoing", "VICE 3.8 RGB", "VICE 3.8 VICE Original", "VICE 3.8 VICE Internal", "Pixcen Colodore"}
 
     Public Function OptimizeKla() As Boolean
         On Error GoTo Err
@@ -157,6 +175,10 @@ Err:
             FrmSPOT.Refresh()
         End If
 
+        For i As Integer = 0 To NumPalettes * 16 - 1
+            c64palettesYUV(i) = RGB2YUV(C64Palettes(i * 4 + 1), C64Palettes(i * 4 + 2), C64Palettes(i * 4 + 3))
+        Next
+
         PicW = Int(OrigBitmap.Width / 2)
         PicH = OrigBitmap.Height
         CharCol = Int(PicW / 4)
@@ -164,120 +186,296 @@ Err:
 
         If CmdLn = False Then
             If My.Settings.OutputKla = True Then
-                If (CharCol < 40) Or (CharRow < 25) Then
+                If (OrigBitmap.Width < 320) Or (OrigBitmap.Height < 200) Then
                     MsgBox("This image cannot be saved as Koala or Optimized Bitmap as it is smaller than 320x200 pixels!" + vbNewLine + vbNewLine +
                        "All other selected output formats will be created.", vbOKOnly + vbInformation, "Image is too small for KLA and OBM formats")
                 End If
             End If
         End If
 
-        Dim R, G, B As Byte
-        Dim PicCol As Color
-        Dim dR, dG, dB, uR As Integer
-        Dim dH, dS, dV, BestHSV As Double
-        Dim BestMatch, BestMatchIndex As Integer
-        Dim BestPalette(NumPalettes - 1) As Integer
-        Dim BestPaletteIndex As Integer
+        Dim ThisPalette(15) As Color
+        For i As Integer = 0 To 16 - 1
+
+            ThisPalette(i) = Color.FromArgb(0, 255, 255, 255)
+        Next
 
         C64Bitmap = New Bitmap(OrigBitmap.Width, OrigBitmap.Height, Imaging.PixelFormat.Format32bppArgb)
 
-        'First check if there is a direct palette match
-        Dim PaletteMatch As Boolean
-        For P As Integer = 0 To NumPalettes - 1
-            If P = (VICE_36_Pixcen / PaletteLen) Then
-                P += 0
-            End If
-            For Y As Integer = 0 To PicH - 1
-                For X As Integer = 0 To PicW - 1
-                    PaletteMatch = False
-                    PicCol = OrigBitmap.GetPixel(X * 2, Y)
-                    For J As Integer = 0 To 15
-                        If (C64Palettes((64 * P) + (J * 4) + 1) = PicCol.R) And (C64Palettes((64 * P) + (J * 4) + 2) = PicCol.G) And (C64Palettes((64 * P) + (J * 4) + 3) = PicCol.B) Then
-                            'Use default palette 
-                            Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (J * 4) + 1), C64Palettes(VICE_36_Pixcen + (J * 4) + 2), C64Palettes(VICE_36_Pixcen + (J * 4) + 3))
+        Dim NumColors As Integer = 0
 
-                            C64Bitmap.SetPixel(X * 2, Y, NewColor)
-                            C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
-                            PaletteMatch = True
-                            Exit For
-                        End If
-                    Next
-                    If PaletteMatch = False Then Exit For
+        'Obtain palette from original bitmap
+
+        For y As Integer = 0 To OrigBitmap.Height - 1
+            For x As Integer = 0 To OrigBitmap.Width - 1 Step 2
+
+                Dim ThisCol As Color = OrigBitmap.GetPixel(x, y)
+                Dim ColorMatch As Boolean = False
+
+                For c As Integer = 0 To NumColors
+
+                    ColorMatch = (ThisPalette(c) = ThisCol)
+                    If ColorMatch Then Exit For
+
                 Next
-                If PaletteMatch = False Then Exit For
+                If ColorMatch = False Then
+                    If NumColors = 16 Then
+                        If CmdLn = False Then
+
+                            FrmSPOT.TSSL.Text = "Palette could not be converted :("
+                            FrmSPOT.Refresh()
+
+                        End If
+
+                        MsgBox("This picture cannot be converted because it contains more than 16 colors", vbOKOnly + vbCritical, "Unable to convert picture")
+                        ConvertPicToC64Palette = False
+                        Exit Function
+
+                    Else
+
+                        ThisPalette(NumColors) = ThisCol
+                        NumColors += 1
+                    End If
+                End If
             Next
-            If PaletteMatch = True Then Exit Function   'Direct match found, we are done
         Next
 
-        If CmdLn = False Then
-            FrmSPOT.TSSL.Text = "Direct palette match not found. Identifying best fitting C64 palette..."
-            FrmSPOT.Refresh()
+        'First check if there is an exact match
+
+        Dim PaletteIdx As Integer = -1
+
+        For i As Integer = 0 To NumPalettes - 1
+            Dim PMatch As Boolean = False
+            For t As Integer = 0 To NumColors - 1
+
+                Dim ColorMatch As Boolean = False
+
+                For c = 0 To 15
+
+                    Dim PaletteColor As Color = Color.FromArgb(C64Palettes(i * PaletteLen + c * 4 + 1), C64Palettes(i * PaletteLen + c * 4 + 2), C64Palettes(i * PaletteLen + c * 4 + 3))
+                    ColorMatch = (PaletteColor = ThisPalette(t))
+                    If ColorMatch Then Exit For
+
+                Next
+
+                PMatch = ColorMatch
+                If PMatch = False Then Exit For
+
+            Next
+            If PMatch = True Then
+
+                PaletteIdx = i
+                Exit For
+
+            End If
+        Next
+
+        If PaletteIdx > -1 Then
+            'Exact palette match found
+            For y As Integer = 0 To OrigBitmap.Height - 1
+                For x As Integer = 0 To OrigBitmap.Width - 1 Step 2
+
+                    Dim ThisCol As Color = OrigBitmap.GetPixel(x, y)
+
+                    For i As Integer = 0 To 15
+
+                        Dim C64Color As Color = Color.FromArgb(C64Palettes(PaletteIdx * PaletteLen + i * 4 + 1), C64Palettes(PaletteIdx * PaletteLen + i * 4 + 2), C64Palettes(PaletteIdx * PaletteLen + i * 4 + 3))
+
+                        If C64Color = ThisCol Then
+
+                            Dim DefaultColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen * PaletteLen + i * 4 + 1), C64Palettes(VICE_36_Pixcen * PaletteLen + i * 4 + 2), C64Palettes(VICE_36_Pixcen * PaletteLen + i * 4 + 3))
+
+                            C64Bitmap.SetPixel(x, y, DefaultColor)
+                            C64Bitmap.SetPixel(x + 1, y, DefaultColor)
+
+                        End If
+                    Next
+                Next
+            Next
+        Else
+
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text = "No exact palette match found. Closest palette: "
+                FrmSPOT.Refresh()
+            End If
+
+            Dim BestPaletteIdx As Integer = 0
+            Dim ThisPaletteYUV(15) As YUV
+
+            For i As Integer = 0 To NumColors - 1
+                ThisPaletteYUV(i) = RGB2YUV(ThisPalette(i).R, ThisPalette(i).G, ThisPalette(i).B)
+            Next
+
+            Dim BestDistance As Double = Double.MaxValue
+            Dim BestColorIdx(15) As Integer
+
+            For p As Integer = 0 To NumPalettes - 1
+
+                Dim ColorDistance(15, 15) As Double
+
+                For c As Integer = 0 To 15
+                    For t As Integer = 0 To 15
+                        If ThisPalette(t) = Color.FromArgb(0, 255, 255, 255) Then
+
+                            ColorDistance(c, t) = 0
+
+                        Else
+
+                            ColorDistance(c, t) = YUVDistance(c64palettesYUV(p * 16 + c), ThisPaletteYUV(t))
+
+                        End If
+                    Next
+                Next
+
+                Dim ThisDistance As Double = HungarianAlgorith(ColorDistance)
+
+                If ThisDistance < BestDistance Then
+
+                    BestDistance = ThisDistance
+                    BestPaletteIdx = p
+
+                    For i As Integer = 0 To 15
+
+                        BestColorIdx(i) = PaletteAssignment(i)
+
+                    Next
+                End If
+            Next
+
+            If CmdLn = False Then
+                FrmSPOT.TSSL.Text += PaletteNames(BestPaletteIdx)
+                FrmSPOT.Refresh()
+            End If
+
+            For y As Integer = 0 To OrigBitmap.Height - 1
+                For x As Integer = 0 To OrigBitmap.Width - 1 Step 2
+
+                    Dim ThisColor As Color = OrigBitmap.GetPixel(x, y)
+
+                    For i As Integer = 0 To NumColors - 1
+                        If ThisPalette(i) = ThisColor Then
+
+                            Dim ColorIndex As Integer = BestColorIdx(i)
+
+                            Dim DefaultColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + ColorIndex * 4 + 1), C64Palettes(VICE_36_Pixcen + ColorIndex * 4 + 2), C64Palettes(VICE_36_Pixcen + ColorIndex * 4 + 3))
+
+                            C64Bitmap.SetPixel(x, y, DefaultColor)
+                            C64Bitmap.SetPixel(x + 1, y, DefaultColor)
+
+                        End If
+                    Next
+                Next
+            Next
         End If
 
-        'No direct match, identify the best matching C64 palette
-        For Y As Integer = 0 To PicH - 1
-            For X As Integer = 0 To PicW - 1
-                R = OrigBitmap.GetPixel(X * 2, Y).R
-                G = OrigBitmap.GetPixel(X * 2, Y).G
-                B = OrigBitmap.GetPixel(X * 2, Y).B
+        Exit Function
 
-                BestMatch = &H10000000
+        'Dim R, G, B As Byte
+        'Dim PicCol As Color
+        'Dim dR, dG, dB, uR As Integer
+        'Dim dH, dS, dV, BestHSV As Double
+        'Dim BestMatch, BestMatchIndex As Integer
+        'Dim BestPalette(NumPalettes - 1) As Integer
+        'Dim BestPaletteIndex As Integer
 
-                For P As Integer = 0 To NumPalettes - 1
-                    For J As Integer = 0 To 15
-                        uR = (R + CInt(C64Palettes((P * 64) + (J * 4) + 1))) / 2
-                        dR = R - CInt(C64Palettes((P * 64) + (J * 4) + 1))
-                        dG = G - CInt(C64Palettes((P * 64) + (J * 4) + 2))
-                        dB = B - CInt(C64Palettes((P * 64) + (J * 4) + 3))
-                        Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
-                        If cDiff < BestMatch Then
-                            BestMatch = cDiff
-                            BestMatchIndex = J
-                            BestPaletteIndex = P
-                        End If
-                    Next
-                Next
-                BestPalette(BestPaletteIndex) += 1
-            Next
-        Next
+        'C64Bitmap = New Bitmap(OrigBitmap.Width, OrigBitmap.Height, Imaging.PixelFormat.Format32bppArgb)
 
-        BestPaletteIndex = -1
-        Dim BP As Integer = 0
-        For I As Integer = 0 To NumPalettes - 1
-            If BestPalette(I) > BP Then
-                BP = BestPalette(I)
-                BestPaletteIndex = I
-            End If
-        Next
+        ''First check if there is a direct palette match
+        'Dim PaletteMatch As Boolean
+        'For P As Integer = 0 To NumPalettes - 1
+        'If P = (VICE_36_Pixcen / PaletteLen) Then
+        'P += 0
+        'End If
+        'For Y As Integer = 0 To PicH - 1
+        'For X As Integer = 0 To PicW - 1
+        'PaletteMatch = False
+        'PicCol = OrigBitmap.GetPixel(X * 2, Y)
+        'For J As Integer = 0 To 15
+        'If (C64Palettes((64 * P) + (J * 4) + 1) = PicCol.R) And (C64Palettes((64 * P) + (J * 4) + 2) = PicCol.G) And (C64Palettes((64 * P) + (J * 4) + 3) = PicCol.B) Then
+        ''Use default palette 
+        'Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (J * 4) + 1), C64Palettes(VICE_36_Pixcen + (J * 4) + 2), C64Palettes(VICE_36_Pixcen + (J * 4) + 3))
 
-        'Now use the best matching palette to match colors
-        For Y As Integer = 0 To PicH - 1
-            For X As Integer = 0 To PicW - 1
-                R = OrigBitmap.GetPixel(X * 2, Y).R
-                G = OrigBitmap.GetPixel(X * 2, Y).G
-                B = OrigBitmap.GetPixel(X * 2, Y).B
+        'C64Bitmap.SetPixel(X * 2, Y, NewColor)
+        'C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
+        'PaletteMatch = True
+        'Exit For
+        'End If
+        'Next
+        'If PaletteMatch = False Then Exit For
+        'Next
+        'If PaletteMatch = False Then Exit For
+        'Next
+        'If PaletteMatch = True Then Exit Function   'Direct match found, we are done
+        'Next
 
-                BestMatch = &H10000000
+        'If CmdLn = False Then
+        'FrmSPOT.TSSL.Text = "Direct palette match not found. Identifying best fitting C64 palette..."
+        'FrmSPOT.Refresh()
+        'End If
 
-                For J As Integer = 0 To 15
-                    uR = (R + CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))) / 2
-                    dR = R - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))
-                    dG = G - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 2))
-                    dB = B - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 3))
-                    Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
-                    If cDiff < BestMatch Then
-                        BestMatch = cDiff
-                        BestMatchIndex = J
-                    End If
-                Next
+        ''No direct match, identify the best matching C64 palette
+        'For Y As Integer = 0 To PicH - 1
+        'For X As Integer = 0 To PicW - 1
+        'R = OrigBitmap.GetPixel(X * 2, Y).R
+        'G = OrigBitmap.GetPixel(X * 2, Y).G
+        'B = OrigBitmap.GetPixel(X * 2, Y).B
 
-                'Use default palette 
-                Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 1), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 2), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 3))
+        'BestMatch = &H10000000
 
-                C64Bitmap.SetPixel(X * 2, Y, NewColor)
-                C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
-            Next
-        Next
+        'For P As Integer = 0 To NumPalettes - 1
+        'For J As Integer = 0 To 15
+        'uR = (R + CInt(C64Palettes((P * 64) + (J * 4) + 1))) / 2
+        'dR = R - CInt(C64Palettes((P * 64) + (J * 4) + 1))
+        'dG = G - CInt(C64Palettes((P * 64) + (J * 4) + 2))
+        'dB = B - CInt(C64Palettes((P * 64) + (J * 4) + 3))
+        'Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
+        'If cDiff < BestMatch Then
+        'BestMatch = cDiff
+        'BestMatchIndex = J
+        'BestPaletteIndex = P
+        'End If
+        'Next
+        'Next
+        'BestPalette(BestPaletteIndex) += 1
+        'Next
+        'Next
+
+        'BestPaletteIndex = -1
+        'Dim BP As Integer = 0
+        'For I As Integer = 0 To NumPalettes - 1
+        'If BestPalette(I) > BP Then
+        'BP = BestPalette(I)
+        'BestPaletteIndex = I
+        'End If
+        'Next
+
+        ''Now use the best matching palette to match colors
+        'For Y As Integer = 0 To PicH - 1
+        'For X As Integer = 0 To PicW - 1
+        'R = OrigBitmap.GetPixel(X * 2, Y).R
+        'G = OrigBitmap.GetPixel(X * 2, Y).G
+        'B = OrigBitmap.GetPixel(X * 2, Y).B
+
+        'BestMatch = &H10000000
+
+        'For J As Integer = 0 To 15
+        'uR = (R + CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))) / 2
+        'dR = R - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 1))
+        'dG = G - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 2))
+        'dB = B - CInt(C64Palettes((BestPaletteIndex * 64) + (J * 4) + 3))
+        'Dim cDiff = (((512 + uR) * dR * dR) >> 8) + (4 * dG * dG) + (((767 - uR) * dB * dB) >> 8)
+        'If cDiff < BestMatch Then
+        'BestMatch = cDiff
+        'BestMatchIndex = J
+        'End If
+        'Next
+
+        ''Use default palette 
+        'Dim NewColor As Color = Color.FromArgb(C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 1), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 2), C64Palettes(VICE_36_Pixcen + (BestMatchIndex * 4) + 3))
+
+        'C64Bitmap.SetPixel(X * 2, Y, NewColor)
+        'C64Bitmap.SetPixel((X * 2) + 1, Y, NewColor)
+        'Next
+        'Next
 
         Exit Function
 Err:
@@ -288,6 +486,30 @@ Err:
             FrmSPOT.TSSL.Text = "Palette could not be converted :("
             FrmSPOT.Refresh()
         End If
+
+    End Function
+
+    Private Function RGB2YUV(R As Integer, G As Integer, B As Integer) As YUV
+
+        Dim YUVColor As YUV
+
+        YUVColor.Y = 0.299 * R + 0.587 * G + 0.114 * B
+        YUVColor.U = -0.14713 * R - 0.28886 * G + 0.436 * B     '0.492 * (B - YUVColor.Y)
+        YUVColor.V = 0.615 * R - 0.51499 * G - 0.10001 * B      '0.877 * (R - YUVColor.Y)
+
+        Return YUVColor
+
+    End Function
+
+    Private Function YUVDistance(YUV1 As YUV, YUV2 As YUV) As Double
+
+        Dim dY As Double = YUV1.Y - YUV2.Y
+        Dim dU As Double = YUV1.U - YUV2.U
+        Dim dV As Double = YUV1.V - YUV2.V
+
+        Dim YUVD As Double = dY * dY + dU * dU + dV * dV
+
+        Return YUVD
 
     End Function
 

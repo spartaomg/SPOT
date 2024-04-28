@@ -5,19 +5,23 @@
 
     Private NumCovered As Integer = 0
 
-    Private matrix(rows, cols) As Double
-    Private amatrix(rows, cols) As Integer
-    Private pmatrix(rows, cols) As Integer
+    Private matrix(rows - 1, cols - 1) As Double
+    Private amatrix(rows - 1, cols - 1) As Integer
+    Private pmatrix(rows - 1, cols - 1) As Integer
 
-    Private CoveredRows(rows) As Integer
-    Private CoveredCols(cols) As Integer
+    Private CoveredRows(rows - 1) As Integer
+    Private CoveredCols(cols - 1) As Integer
 
-    Public PaletteAssignment(16) As Integer
+    Public PaletteAssignment(15) As Integer
 
     Public Function HungarianAlgorith(m(,) As Double) As Double
 
-        'Create copy of m matrix and reset amatrix And pmatrix
+        ReDim amatrix(rows - 1, cols - 1), pmatrix(rows - 1, cols - 1)
+        ReDim CoveredRows(rows - 1), CoveredCols(cols - 1)
+        ReDim PaletteAssignment(15)
+        NumCovered = 0
 
+        'Create copy of m matrix and reset amatrix And pmatrix
         For r As Integer = 0 To rows - 1
             For c As Integer = 0 To cols - 1
                 matrix(r, c) = m(r, c)
@@ -117,7 +121,7 @@
                                     'Primed 0s are either in the same row or the same col of an assigned 0
                                     Dim ac As Integer
                                     For ac = 0 To cols - 1
-                                        If amatrix(ac, r) = 1 Then
+                                        If amatrix(r, ac) = 1 Then
                                             Exit For
                                         End If
                                     Next
@@ -149,17 +153,16 @@
                         Exit For
                     End If
                 Next
-
-                If Flipped0 = False Then
-                    'we ran out of unassinged 0's (without flipping, i.e. we didn't change the number of 0s and covered lines)
-                    'we need to create more 0s
-                    CreateNewZeros()
-                    '->create more 0s
-                    '->uncover all lines, clear amatrix And pmatrix
-                    '->assign 0s And cover columns, calculate NumCovered
-                End If
-
             End While
+
+            If Flipped0 = False Then
+                'we ran out of unassinged 0's (without flipping, i.e. we didn't change the number of 0s and covered lines)
+                'we need to create more 0s
+                CreateNewZeros()
+                '->create more 0s
+                '->uncover all lines, clear amatrix And pmatrix
+                '->assign 0s And cover columns, calculate NumCovered
+            End If
         End While
 
     End Sub
@@ -240,7 +243,7 @@
 
         For r As Integer = 0 To rows - 1
             For c As Integer = 0 To cols - 1
-                If (CoveredRows(r) = 0) And (CoveredRows(r) = 0) Then
+                If (CoveredRows(r) = 0) And (CoveredCols(c) = 0) Then
                     matrix(r, c) -= MinVal
                 ElseIf (CoveredRows(r) = 1) And (CoveredCols(c) = 1) Then
                     matrix(r, c) += MinVal
@@ -284,14 +287,16 @@
 
     Private Sub UncoverLines()
 
+        ReDim amatrix(rows - 1, cols - 1), pmatrix(rows - 1, cols - 1)
+
         For r As Integer = 0 To rows - 1
 
             CoveredRows(r) = 0
 
-            For c As Integer = 0 To cols - 1
-                amatrix(r, c) = 0
-                pmatrix(r, c) = 0
-            Next
+            'For c As Integer = 0 To cols - 1
+            'amatrix(r, c) = 0
+            'pmatrix(r, c) = 0
+            'Next
 
         Next
 
